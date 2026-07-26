@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import ChefMascot from '../components/ChefMascot';
+import loginBg from '../assets/login-bg.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,85 +18,67 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-orange-700 via-orange to-orangedark">
-      {/* subtle background texture */}
-      <div
-        className="absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 20% 30%, white 1.5px, transparent 1.5px), radial-gradient(circle at 70% 80%, white 1.5px, transparent 1.5px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      <div className="relative w-full max-w-[880px] flex items-center justify-center gap-6 flex-wrap md:flex-nowrap">
-        {/* LEFT — mascot + greeting */}
-        <div className="flex-1 min-w-[260px] flex flex-col items-center md:items-end text-center md:text-right px-2">
-          <div className="bg-white rounded-2xl rounded-br-md px-5 py-3 shadow-lg mb-2 max-w-[240px]">
-            <p className="text-maroon font-black text-lg leading-tight">Welcome Habibi!</p>
+    <div
+      className="min-h-screen w-full flex items-center justify-center md:justify-end p-4 md:pr-16"
+      style={{
+        backgroundImage: `url(${loginBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl w-full max-w-[380px] p-7">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-gold rounded-2xl text-white text-xl font-black flex items-center justify-center mx-auto mb-3">
+            KN
           </div>
-          <div className="w-[220px] md:w-[260px]">
-            <ChefMascot />
-          </div>
+          <h1 className="text-xl font-black text-maroon">Khurd o Nosh</h1>
+          <p className="text-gray-400 text-xs mt-1">Return POS</p>
         </div>
 
-        {/* RIGHT — login card */}
-        <div className="flex-1 min-w-[300px] max-w-[380px]">
-          <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl w-full p-7">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-gold rounded-2xl text-white text-xl font-black flex items-center justify-center mx-auto mb-3">
-                KN
-              </div>
-              <h1 className="text-xl font-black text-maroon">Khurd o Nosh</h1>
-              <p className="text-gray-400 text-xs mt-1">Return POS</p>
+        <div className="space-y-3">
+          <div>
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Email</label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange text-sm">✉️</span>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 border-2 border-orange-200 rounded-lg outline-none focus:border-orange text-sm"
+                placeholder="staff@khurdonosh.pk"
+                autoFocus
+              />
             </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Email</label>
-                <div className="relative mt-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange text-sm">✉️</span>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 border-2 border-orange-200 rounded-lg outline-none focus:border-orange text-sm"
-                    placeholder="staff@khurdonosh.pk"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Password</label>
-                <div className="relative mt-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange text-sm">🔒</span>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg outline-none focus:border-orange text-sm"
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="text-xs font-bold text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">{error}</div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-2 py-3 bg-gradient-to-r from-orange to-orangedark hover:opacity-90 text-white rounded-lg font-black text-sm disabled:opacity-50 transition-all shadow-md"
-              >
-                {loading ? 'Logging in…' : 'Login'}
-              </button>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Password</label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange text-sm">🔒</span>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg outline-none focus:border-orange text-sm"
+                placeholder="••••••••"
+              />
             </div>
-          </form>
+          </div>
+
+          {error && (
+            <div className="text-xs font-bold text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">{error}</div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3 bg-gradient-to-r from-orange to-orangedark hover:opacity-90 text-white rounded-lg font-black text-sm disabled:opacity-50 transition-all shadow-md"
+          >
+            {loading ? 'Logging in…' : 'Login'}
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
