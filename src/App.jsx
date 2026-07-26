@@ -9,6 +9,7 @@ import Sales from './pages/Sales';
 import Products from './pages/Products';
 import AreaReport from './pages/AreaReport';
 import Customers from './pages/Customers';
+import Admin from './pages/Admin';
 
 const PAGES = {
   pos: POS,
@@ -17,6 +18,7 @@ const PAGES = {
   products: Products,
   area: AreaReport,
   customers: Customers,
+  admin: Admin,
 };
 
 export default function App() {
