@@ -7,6 +7,7 @@ const NAV = [
   { id: 'products', icon: '📦', label: 'Products' },
   { id: 'area', icon: '📍', label: 'Area' },
   { id: 'customers', icon: '👥', label: 'Customers' },
+  { id: 'admin', icon: '⚙️', label: 'Admin' },
 ];
 
 export default function TopBar({ page, setPage, onLogout }) {
