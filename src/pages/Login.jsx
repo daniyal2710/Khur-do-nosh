@@ -22,8 +22,10 @@ export default function Login() {
       className="min-h-screen w-full flex items-center justify-center md:justify-end p-4 md:pr-16"
       style={{
         backgroundImage: `url(${loginBg})`,
-        backgroundSize: 'cover',
+        backgroundSize: 'contain',
         backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#c94c00',
       }}
     >
       <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl w-full max-w-[380px] p-7">
