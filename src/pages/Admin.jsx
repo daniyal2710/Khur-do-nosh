@@ -75,8 +75,14 @@ export default function Admin() {
       <div className="flex items-center gap-3 mb-4">
         <h2 className="text-[22px] font-black text-maroon flex items-center gap-2">⚙️ Administration</h2>
         <button
+          onClick={() => setItemModal({})}
+          className="ml-auto px-4 py-2 bg-orange text-white rounded-lg text-[13px] font-bold"
+        >
+          + New Menu Item
+        </button>
+        <button
           onClick={() => setCatModal({})}
-          className="ml-auto px-4 py-2 bg-maroon text-white rounded-lg text-[13px] font-bold"
+          className="px-4 py-2 bg-maroon text-white rounded-lg text-[13px] font-bold"
         >
           + New Category
         </button>

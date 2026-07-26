@@ -8,7 +8,7 @@ export default function MenuItemModal({ item, categories, defaultCategoryId, onC
   const [description, setDescription] = useState(item?.description || '');
   const [icon, setIcon] = useState(item?.icon || '🍽️');
   const [price, setPrice] = useState(item?.price ?? '');
-  const [categoryId, setCategoryId] = useState(item?.category_id || defaultCategoryId || categories[0]?.id || '');
+  const [categoryId, setCategoryId] = useState(item?.category_id || defaultCategoryId || '');
   const [saving, setSaving] = useState(false);
   const isEdit = !!item;
 
