@@ -9,7 +9,24 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 
 @media print {
+  @page { size: 80mm auto; margin: 0; }
   body * { visibility: hidden; }
-  #print-area, #print-area * { visibility: visible; }
-  #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+
+  body.print-kitchen #kitchen-print,
+  body.print-kitchen #kitchen-print * {
+    visibility: visible;
+  }
+  body.print-customer #customer-print,
+  body.print-customer #customer-print * {
+    visibility: visible;
+  }
+
+  #kitchen-print, #customer-print {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    font-family: 'Courier New', Courier, monospace;
+  }
 }
