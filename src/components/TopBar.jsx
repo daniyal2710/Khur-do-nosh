@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 const NAV = [
   { id: 'pos', icon: '🛒', label: 'POS' },
+  { id: 'orders', icon: '🧾', label: 'Orders' },
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
   { id: 'sales', icon: '💰', label: 'Sales' },
   { id: 'products', icon: '📦', label: 'Products' },
