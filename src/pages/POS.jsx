@@ -19,6 +19,7 @@ export default function POS() {
   const [areaId, setAreaId] = useState(null);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [notes, setNotes] = useState('');
 
   const [custQuery, setCustQuery] = useState('');
   const [custResults, setCustResults] = useState([]);
@@ -100,10 +101,31 @@ export default function POS() {
     setCustomer(null);
   }
 
+  function resetOrder() {
+    setCart([]);
+    setCustomer(null);
+    setCustQuery('');
+    setOrderType('dine-in');
+    setAreaId(null);
+    setDeliveryAddress('');
+    setNotes('');
+    setPaymentMethod('cash');
+  }
+
+  function handleNewOrder() {
+    setCompletedOrder(null);
+    resetOrder();
+  }
+
+  function handleClearOrder() {
+    if (cart.length && !window.confirm('Poora order clear karna chahte hain?')) return;
+    resetOrder();
+  }
+
   async function placeOrder() {
     if (!cart.length) return;
-    if (orderType === 'delivery' && !areaId) {
-      showToast('Delivery ke liye area select karein', 'error');
+    if ((orderType === 'delivery' || orderType === 'foodpanda') && !areaId) {
+      showToast('Area select karein', 'error');
       return;
     }
     if (orderType === 'delivery' && !deliveryAddress.trim()) {
@@ -116,12 +138,13 @@ export default function POS() {
       .insert({
         customer_id: customer?.id || null,
         order_type: orderType,
-        area_id: orderType === 'delivery' ? areaId : null,
+        area_id: (orderType === 'delivery' || orderType === 'foodpanda') ? areaId : null,
         delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
         payment_method: paymentMethod,
         subtotal,
         total,
         status: 'queued',
+        notes: notes.trim() || null,
       })
       .select()
       .single();
@@ -152,11 +175,7 @@ export default function POS() {
 
     showToast(`Order ${order.order_number} place ho gaya`);
     setCompletedOrder({ order, items: itemRows, customer });
-    setCart([]);
-    setCustomer(null);
-    setOrderType('dine-in');
-    setAreaId(null);
-    setDeliveryAddress('');
+    resetOrder();
   }
 
   if (loading) {
@@ -172,29 +191,29 @@ export default function POS() {
             <button
               key={c.id}
               onClick={() => setActiveCat(c.id)}
-              className={`flex flex-col items-center px-3.5 py-2.5 border-b-[3px] gap-0.5 flex-shrink-0 whitespace-nowrap text-[11px] font-bold transition-all ${
+              className={`flex flex-col items-center px-5 py-3.5 border-b-[4px] gap-1 flex-shrink-0 whitespace-nowrap text-xs font-bold transition-all ${
                 activeCat === c.id
                   ? 'border-orange text-orange bg-orange-50'
                   : 'border-transparent text-gray-500 hover:bg-gray-50'
               }`}
             >
-              <span className="text-[22px]">{c.icon}</span>
+              <span className="text-2xl">{c.icon}</span>
               {c.name}
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto p-3 grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(138px,1fr))', alignContent: 'start' }}>
+        <div className="flex-1 overflow-y-auto p-3 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', alignContent: 'start' }}>
           {visibleMenu.map((item) => (
             <div
               key={item.id}
               onClick={() => addToCart(item)}
-              className="bg-white rounded-[13px] p-3 cursor-pointer border-2 border-transparent shadow-sm hover:border-orange hover:shadow-md hover:-translate-y-0.5 active:scale-[.97] transition-all text-center relative select-none"
+              className="bg-white rounded-2xl p-4 cursor-pointer border-2 border-transparent shadow-sm hover:border-orange hover:shadow-lg active:scale-[.96] transition-all text-center relative select-none"
             >
-              <div className="text-3xl mb-1.5 leading-none">{item.icon}</div>
-              <div className="text-xs font-bold leading-tight">{item.name}</div>
+              <div className="text-4xl mb-2 leading-none">{item.icon}</div>
+              <div className="text-sm font-bold leading-tight">{item.name}</div>
               {item.description && <div className="text-[10px] text-gray-400 mt-0.5">{item.description}</div>}
-              <div className="text-sm font-black text-orange mt-1.5">{fmtPKR(item.price)}</div>
-              <button className="absolute bottom-2 right-2 w-[26px] h-[26px] bg-orange text-white rounded-full font-black flex items-center justify-center pointer-events-none">
+              <div className="text-base font-black text-orange mt-2">{fmtPKR(item.price)}</div>
+              <button className="absolute bottom-2.5 right-2.5 w-8 h-8 bg-orange text-white rounded-full font-black text-lg flex items-center justify-center pointer-events-none shadow-md">
                 +
               </button>
             </div>
@@ -208,7 +227,25 @@ export default function POS() {
       {/* CART SIDE */}
       <div className="w-[320px] flex-shrink-0 flex flex-col bg-white">
         <div className="bg-maroon p-3.5">
-          <div className="text-yellow-300 text-[11px] font-bold">NEW ORDER</div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-yellow-300 text-[11px] font-bold">NEW ORDER</div>
+            <div className="flex gap-1.5">
+              <button
+                onClick={handleNewOrder}
+                className="text-[10px] font-bold px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-md"
+                title="Start a fresh new order"
+              >
+                🆕 New Order
+              </button>
+              <button
+                onClick={handleClearOrder}
+                className="text-[10px] font-bold px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-md"
+                title="Clear current selection"
+              >
+                🗑️ Clear
+              </button>
+            </div>
+          </div>
           <div className="text-white text-base font-black mt-0.5">
             {cart.length ? `${cart.reduce((s, x) => s + x.qty, 0)} items` : 'Cart is empty'}
           </div>
@@ -228,7 +265,7 @@ export default function POS() {
               </button>
             ))}
           </div>
-          {orderType === 'delivery' && (
+          {(orderType === 'delivery' || orderType === 'foodpanda') && (
             <>
               <select
                 value={areaId || ''}
@@ -240,13 +277,15 @@ export default function POS() {
                   <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
                 ))}
               </select>
-              <textarea
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                placeholder="Guided address — house #, street, landmark…"
-                rows={2}
-                className="w-full mt-2 text-xs rounded-lg px-2 py-1.5 text-gray-800 resize-none"
-              />
+              {orderType === 'delivery' && (
+                <textarea
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Guided address — house #, street, landmark…"
+                  rows={2}
+                  className="w-full mt-2 text-xs rounded-lg px-2 py-1.5 text-gray-800 resize-none"
+                />
+              )}
             </>
           )}
         </div>
@@ -348,6 +387,14 @@ export default function POS() {
 
         {/* FOOTER */}
         <div className="p-3.5 border-t-2 border-gray-100 flex-shrink-0">
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-wide">📝 Special Instructions</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Less spicy, no onions, extra sauce…"
+            rows={2}
+            className="w-full mt-1 mb-2 text-xs border-2 border-gray-100 rounded-lg px-2 py-1.5 resize-none outline-none focus:border-orange"
+          />
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}

@@ -5,12 +5,38 @@ import BarRow from '../components/BarRow';
 
 export default function AreaReport() {
   const [rows, setRows] = useState([]);
+  const [peakHour, setPeakHour] = useState(null);
+  const [peakAreaBreakdown, setPeakAreaBreakdown] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('v_area_performance').select('*');
+      const [{ data }, { data: areaOrders }] = await Promise.all([
+        supabase.from('v_area_performance').select('*'),
+        supabase.from('orders').select('created_at, areas(name, icon)').not('area_id', 'is', null).limit(5000),
+      ]);
       setRows(data || []);
+
+      const hourlyTotal = Array(24).fill(0);
+      const hourAreaCounts = Array.from({ length: 24 }, () => ({}));
+      (areaOrders || []).forEach((o) => {
+        if (!o.areas) return;
+        const hr = new Date(o.created_at).getHours();
+        hourlyTotal[hr] += 1;
+        const name = o.areas.name;
+        if (!hourAreaCounts[hr][name]) hourAreaCounts[hr][name] = { icon: o.areas.icon, count: 0 };
+        hourAreaCounts[hr][name].count += 1;
+      });
+      const maxCount = Math.max(...hourlyTotal);
+      if (maxCount > 0) {
+        const hr = hourlyTotal.indexOf(maxCount);
+        setPeakHour(hr);
+        setPeakAreaBreakdown(
+          Object.entries(hourAreaCounts[hr])
+            .map(([name, v]) => ({ name, icon: v.icon, count: v.count }))
+            .sort((a, b) => b.count - a.count)
+        );
+      }
       setLoading(false);
     })();
   }, []);
@@ -25,7 +51,7 @@ export default function AreaReport() {
       <h2 className="text-[22px] font-black text-maroon mb-4 flex items-center gap-2">📍 Area Report</h2>
 
       <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
-        <h3 className="text-sm font-extrabold mb-3">📊 Revenue by Area</h3>
+        <h3 className="text-sm font-extrabold mb-3">📊 Order-Wise Area Report</h3>
         <div className="flex flex-col gap-2">
           {rows.map((a, i) => {
             const pct = Math.round((a.revenue / totalRevenue) * 100);
@@ -71,6 +97,35 @@ export default function AreaReport() {
             </div>
           );
         })}
+      </div>
+
+      {/* PEAK HOUR AREA REPORT */}
+      <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mt-3.5">
+        <h3 className="text-sm font-extrabold mb-1">⏰ Peak Hour Area Report</h3>
+        {peakHour !== null ? (
+          <>
+            <p className="text-[11px] text-gray-400 mb-3">
+              Busiest hour for area orders: {String(peakHour).padStart(2, '0')}:00–{String(peakHour + 1).padStart(2, '0')}:00
+            </p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] font-extrabold text-gray-400 uppercase border-b-2 border-gray-100">
+                  <th className="text-left py-1.5">Area</th><th className="text-left py-1.5">Orders in this hour</th>
+                </tr>
+              </thead>
+              <tbody>
+                {peakAreaBreakdown.map((a) => (
+                  <tr key={a.name} className="border-b border-gray-50 last:border-0">
+                    <td className="py-2 font-extrabold">{a.icon} {a.name}</td>
+                    <td className="py-2">{a.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : (
+          <p className="text-gray-400 text-sm text-center py-3">Abhi tak koi delivery/foodpanda order nahi jisme area ho</p>
+        )}
       </div>
     </div>
   );

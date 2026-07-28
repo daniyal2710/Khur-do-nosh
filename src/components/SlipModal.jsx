@@ -175,6 +175,12 @@ export default function SlipModal({ order, items, customer, onClose }) {
               )}
             </div>
           ))}
+          {order.notes && (
+            <>
+              <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
+              <div style={{ fontSize: '11px', fontWeight: 'bold' }}>NOTE: {order.notes}</div>
+            </>
+          )}
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Subtotal</span><span>{fmtPKR(order.subtotal)}</span>

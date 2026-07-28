@@ -5,6 +5,7 @@ import { fmtPKR } from '../lib/format';
 import CategoryModal from '../components/CategoryModal';
 import MenuItemModal from '../components/MenuItemModal';
 import AreaModal from '../components/AreaModal';
+import ShopSettingsPanel from '../components/ShopSettingsPanel';
 
 export default function Admin() {
   const { showToast } = useToast();
@@ -17,6 +18,7 @@ export default function Admin() {
   const [catModal, setCatModal] = useState(null); // {} = new, {category} = edit, null = closed
   const [itemModal, setItemModal] = useState(null);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [adminTab, setAdminTab] = useState('catalog'); // 'catalog' | 'settings'
 
   async function loadAll() {
     const [{ data: cats }, { data: mi }, { data: ar }] = await Promise.all([
@@ -86,19 +88,45 @@ export default function Admin() {
     <div className="max-w-[1200px] mx-auto p-5">
       <div className="flex items-center gap-3 mb-4">
         <h2 className="text-[22px] font-black text-maroon flex items-center gap-2">⚙️ Administration</h2>
-        <button
-          onClick={() => setItemModal({})}
-          className="ml-auto px-4 py-2 bg-orange text-white rounded-lg text-[13px] font-bold"
-        >
-          + New Menu Item
-        </button>
-        <button
-          onClick={() => setCatModal({})}
-          className="px-4 py-2 bg-maroon text-white rounded-lg text-[13px] font-bold"
-        >
-          + New Category
-        </button>
+        {adminTab === 'catalog' && (
+          <>
+            <button
+              onClick={() => setItemModal({})}
+              className="ml-auto px-4 py-2 bg-orange text-white rounded-lg text-[13px] font-bold"
+            >
+              + New Menu Item
+            </button>
+            <button
+              onClick={() => setCatModal({})}
+              className="px-4 py-2 bg-maroon text-white rounded-lg text-[13px] font-bold"
+            >
+              + New Category
+            </button>
+          </>
+        )}
       </div>
+
+      <div className="flex gap-2 mb-5">
+        {[
+          { id: 'catalog', label: '🍽️ Menu & Areas' },
+          { id: 'settings', label: '🏪 Shop Settings' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setAdminTab(t.id)}
+            className={`px-4 py-2 rounded-lg text-[13px] font-bold border-2 transition-all ${
+              adminTab === t.id ? 'bg-maroon text-white border-maroon' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-200'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {adminTab === 'settings' && <ShopSettingsPanel />}
+
+      {adminTab === 'catalog' && (
+        <>
 
       {/* CATEGORIES GRID */}
       <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))' }}>
@@ -228,6 +256,8 @@ export default function Admin() {
         </div>
       ) : (
         <div className="text-center text-gray-400 py-10">👆 Kisi category pe click karein uske menu items dekhne ke liye</div>
+      )}
+        </>
       )}
 
       {showAreaModal && (
