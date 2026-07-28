@@ -17,38 +17,61 @@ const STATUS_BADGE = {
   ready: 'bg-green-200 text-green-800',
 };
 
+const TYPE_META = {
+  'dine-in': { icon: '🍽️', label: 'Dine-in', color: '#f59f00' },
+  takeaway: { icon: '🥡', label: 'Takeaway', color: '#2b8a3e' },
+  delivery: { icon: '🛵', label: 'Delivery', color: '#e8590c' },
+  foodpanda: { icon: '🐼', label: 'Food Panda', color: '#d6336c' },
+};
+
 export default function Dashboard() {
   const { showToast } = useToast();
-  const [kpis, setKpis] = useState({ today: { orders: 0, revenue: 0 }, week: { orders: 0, revenue: 0 }, month: { orders: 0, revenue: 0 } });
+  const [kpis, setKpis] = useState({ today: { orders: 0, revenue: 0 }, week: { orders: 0, revenue: 0 } });
   const [live, setLive] = useState([]);
   const [daily, setDaily] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [typeSummary, setTypeSummary] = useState({});
+  const [peakHours, setPeakHours] = useState(Array(24).fill(0));
   const [loading, setLoading] = useState(true);
 
   async function loadAll() {
     const now = new Date();
     const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const startWeek = new Date(now.getTime() - 6 * 86400000).toISOString();
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    const [todayQ, weekQ, monthQ, liveQ, dailyQ, payQ] = await Promise.all([
+    const [todayQ, weekQ, liveQ, dailyQ, payQ, allOrdersQ] = await Promise.all([
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startToday),
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startWeek),
-      supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startMonth),
       supabase.from('orders').select('*, order_items(*)').in('status', ['queued', 'cooking', 'ready']).order('created_at', { ascending: false }),
       supabase.from('v_daily_sales').select('*').limit(7),
       supabase.from('v_payment_breakdown').select('*'),
+      supabase.from('orders').select('order_type, status, total, created_at').limit(5000),
     ]);
 
     const sum = (rows) => (rows || []).reduce((s, r) => s + Number(r.total), 0);
     setKpis({
       today: { orders: (todayQ.data || []).length, revenue: sum(todayQ.data) },
       week: { orders: (weekQ.data || []).length, revenue: sum(weekQ.data) },
-      month: { orders: (monthQ.data || []).length, revenue: sum(monthQ.data) },
     });
     setLive(liveQ.data || []);
     setDaily(dailyQ.data || []);
     setPayments(payQ.data || []);
+
+    // Sale-mode summary: total orders + completed revenue, per order type
+    const summary = {};
+    Object.keys(TYPE_META).forEach((t) => { summary[t] = { orders: 0, revenue: 0 }; });
+    const hourly = Array(24).fill(0);
+    (allOrdersQ.data || []).forEach((o) => {
+      if (summary[o.order_type]) {
+        summary[o.order_type].orders += 1;
+        if (o.status === 'completed') summary[o.order_type].revenue += Number(o.total);
+      }
+      const hr = new Date(o.created_at).getHours();
+      hourly[hr] += 1;
+    });
+    setTypeSummary(summary);
+    setPeakHours(hourly);
+
     setLoading(false);
   }
 
@@ -75,6 +98,9 @@ export default function Dashboard() {
 
   const maxDaily = Math.max(1, ...daily.map((d) => Number(d.revenue)));
   const totalPay = payments.reduce((s, p) => s + Number(p.revenue), 0) || 1;
+  const totalTypeOrders = Object.values(typeSummary).reduce((s, t) => s + t.orders, 0) || 1;
+  const maxHourly = Math.max(1, ...peakHours);
+  const peakHourIdx = peakHours.indexOf(Math.max(...peakHours));
 
   return (
     <div className="pwrap max-w-[1200px] mx-auto p-5">
@@ -84,7 +110,6 @@ export default function Dashboard() {
         {[
           { icon: '📅', label: 'Today', v: kpis.today, color: 'text-orange' },
           { icon: '📆', label: 'This Week', v: kpis.week },
-          { icon: '🗓️', label: 'This Month', v: kpis.month },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-[13px] p-4 border-2 border-gray-100">
             <div className="text-[28px] mb-1.5">{k.icon}</div>
@@ -95,13 +120,33 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* SALE MODE SUMMARY */}
+      <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
+        <h3 className="text-sm font-extrabold mb-3">🧾 Orders by Sale Mode</h3>
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
+          {Object.entries(TYPE_META).map(([key, meta]) => {
+            const t = typeSummary[key] || { orders: 0, revenue: 0 };
+            const pct = Math.round((t.orders / totalTypeOrders) * 100);
+            return (
+              <div key={key} className="border-2 border-gray-100 rounded-[11px] p-3 text-center">
+                <div className="text-2xl mb-1">{meta.icon}</div>
+                <div className="text-[11px] font-bold text-gray-500">{meta.label}</div>
+                <div className="text-xl font-black mt-1">{t.orders}</div>
+                <div className="text-[10px] text-gray-400">orders · {pct}%</div>
+                <div className="text-[12px] font-extrabold mt-1" style={{ color: meta.color }}>{fmtPKR(t.revenue)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
         <h3 className="text-sm font-extrabold mb-3 flex items-center gap-1.5">🔴 Live Orders ({live.length})</h3>
         {!live.length && <p className="text-gray-400 text-sm py-3 text-center">Abhi koi active order nahi hai</p>}
         {live.map((o) => (
           <div key={o.id} className={`flex items-center justify-between p-2.5 rounded-lg mb-2 ${STATUS_CLS[o.status]}`}>
             <div>
-              <div className="text-sm font-extrabold">{o.order_number}</div>
+              <div className="text-sm font-extrabold">{o.order_number} <span className="text-xs font-normal text-gray-400">{TYPE_META[o.order_type]?.icon} {TYPE_META[o.order_type]?.label}</span></div>
               <div className="text-xs text-gray-500 mt-0.5">
                 {(o.order_items || []).map((it) => `${it.quantity}× ${it.item_name}`).join(', ')}
               </div>
@@ -122,6 +167,27 @@ export default function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* PEAK HOURS */}
+      <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
+        <h3 className="text-sm font-extrabold mb-1">⏰ Peak Hours</h3>
+        <p className="text-[11px] text-gray-400 mb-3">Orders taken per hour · busiest: {peakHourIdx}:00–{peakHourIdx + 1}:00</p>
+        <div className="flex flex-col gap-1.5">
+          {peakHours.map((count, hr) => {
+            if (count === 0 && (hr < 6 || hr > 23)) return null;
+            return (
+              <BarRow
+                key={hr}
+                label={`${String(hr).padStart(2, '0')}:00`}
+                value={count}
+                valueLabel={`${count} orders`}
+                max={maxHourly}
+                color={hr === peakHourIdx ? '#e8590c' : '#f59f00'}
+              />
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">

@@ -212,17 +212,19 @@ export default function POS() {
           <div className="text-white text-base font-black mt-0.5">
             {cart.length ? `${cart.reduce((s, x) => s + x.qty, 0)} items` : 'Cart is empty'}
           </div>
-          <div className="flex gap-1.5 mt-2">
-            {['dine-in', 'takeaway', 'delivery'].map((t) => (
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            {['dine-in', 'takeaway', 'delivery', 'foodpanda'].map((t) => (
               <button
                 key={t}
                 onClick={() => changeOrderType(t)}
-                className={`flex-1 py-1.5 px-1 border-2 rounded-lg text-[11px] font-bold text-center transition-all ${
+                className={`py-1.5 px-1 border-2 rounded-lg text-[11px] font-bold text-center transition-all ${
                   orderType === t ? 'bg-white text-maroon border-white' : 'border-white/30 text-white hover:bg-white/20'
                 }`}
               >
-                <span className="block text-base mb-0.5">{t === 'dine-in' ? '🍽️' : t === 'takeaway' ? '🥡' : '🛵'}</span>
-                {t === 'dine-in' ? 'Dine-in' : t === 'takeaway' ? 'Takeaway' : 'Delivery'}
+                <span className="block text-base mb-0.5">
+                  {t === 'dine-in' ? '🍽️' : t === 'takeaway' ? '🥡' : t === 'delivery' ? '🛵' : '🐼'}
+                </span>
+                {t === 'dine-in' ? 'Dine-in' : t === 'takeaway' ? 'Takeaway' : t === 'delivery' ? 'Delivery' : 'Food Panda'}
               </button>
             ))}
           </div>

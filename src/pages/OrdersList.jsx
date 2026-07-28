@@ -10,7 +10,7 @@ const STATUS_BADGE = {
   completed: 'bg-blue-100 text-blue-700',
   cancelled: 'bg-red-100 text-red-600',
 };
-const TYPE_ICON = { 'dine-in': '🍽️', takeaway: '🥡', delivery: '🛵' };
+const TYPE_ICON = { 'dine-in': '🍽️', takeaway: '🥡', delivery: '🛵', foodpanda: '🐼' };
 
 const PRESETS = [
   { id: 'today', label: 'Today' },

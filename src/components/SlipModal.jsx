@@ -5,6 +5,7 @@ const TYPE_BADGE = {
   'dine-in': { cls: 'bg-yellow-100 text-yellow-800', lb: 'Dine-in' },
   takeaway: { cls: 'bg-green-100 text-green-800', lb: 'Takeaway' },
   delivery: { cls: 'bg-red-100 text-red-800', lb: 'Delivery' },
+  foodpanda: { cls: 'bg-pink-100 text-pink-700', lb: 'Food Panda' },
 };
 
 export default function SlipModal({ order, items, customer, onClose }) {
