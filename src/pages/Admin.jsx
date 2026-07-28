@@ -4,24 +4,29 @@ import { useToast } from '../lib/ToastContext';
 import { fmtPKR } from '../lib/format';
 import CategoryModal from '../components/CategoryModal';
 import MenuItemModal from '../components/MenuItemModal';
+import AreaModal from '../components/AreaModal';
 
 export default function Admin() {
   const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [activeCat, setActiveCat] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [catModal, setCatModal] = useState(null); // {} = new, {category} = edit, null = closed
   const [itemModal, setItemModal] = useState(null);
+  const [showAreaModal, setShowAreaModal] = useState(false);
 
   async function loadAll() {
-    const [{ data: cats }, { data: mi }] = await Promise.all([
+    const [{ data: cats }, { data: mi }, { data: ar }] = await Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('menu_items').select('*').order('sort_order'),
+      supabase.from('areas').select('*').order('name'),
     ]);
     setCategories(cats || []);
     setItems(mi || []);
+    setAreas(ar || []);
     setLoading(false);
   }
 
@@ -63,6 +68,13 @@ export default function Admin() {
     const { error } = await supabase.from('menu_items').delete().eq('id', item.id);
     if (error) showToast(error.message, 'error');
     else { showToast('Item delete ho gaya'); loadAll(); }
+  }
+
+  async function deleteArea(area) {
+    if (!window.confirm(`"${area.name}" area delete karna chahte hain?`)) return;
+    const { error } = await supabase.from('areas').delete().eq('id', area.id);
+    if (error) showToast(error.message.includes('foreign key') ? 'Ye area kisi order se linked hai, delete nahi ho sakta' : error.message, 'error');
+    else { showToast('Area delete ho gaya'); loadAll(); }
   }
 
   if (loading) return <div className="p-10 text-center text-gray-400">Loading…</div>;
@@ -131,6 +143,34 @@ export default function Admin() {
         )}
       </div>
 
+      {/* DELIVERY AREAS */}
+      <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-extrabold flex items-center gap-1.5">📍 Delivery Areas</h3>
+          <button
+            onClick={() => setShowAreaModal(true)}
+            className="ml-auto px-3.5 py-1.5 bg-orange text-white rounded-lg text-[12px] font-bold"
+          >
+            + New Area
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {areas.map((a) => (
+            <div key={a.id} className="flex items-center gap-2 bg-gray-50 border-2 border-gray-100 rounded-full pl-3 pr-1.5 py-1.5">
+              <span className="text-sm font-bold">{a.icon} {a.name}</span>
+              <button
+                onClick={() => deleteArea(a)}
+                className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded-full text-xs font-bold"
+                title="Delete area"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {!areas.length && <p className="text-gray-400 text-sm py-2">Abhi koi area nahi hai — "+ New Area" se banayein</p>}
+        </div>
+      </div>
+
       {/* ITEMS FOR SELECTED CATEGORY */}
       {activeCat ? (
         <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100">
@@ -188,6 +228,13 @@ export default function Admin() {
         </div>
       ) : (
         <div className="text-center text-gray-400 py-10">👆 Kisi category pe click karein uske menu items dekhne ke liye</div>
+      )}
+
+      {showAreaModal && (
+        <AreaModal
+          onClose={() => setShowAreaModal(false)}
+          onSaved={() => { setShowAreaModal(false); loadAll(); }}
+        />
       )}
 
       {catModal && (

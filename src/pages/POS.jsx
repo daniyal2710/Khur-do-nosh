@@ -17,6 +17,7 @@ export default function POS() {
   const [cart, setCart] = useState([]); // {menu_item_id, name, icon, price, qty}
   const [orderType, setOrderType] = useState('dine-in');
   const [areaId, setAreaId] = useState(null);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
 
   const [custQuery, setCustQuery] = useState('');
@@ -66,7 +67,7 @@ export default function POS() {
       if (existing) {
         return c.map((x) => (x.menu_item_id === item.id ? { ...x, qty: x.qty + 1 } : x));
       }
-      return [...c, { menu_item_id: item.id, name: item.name, icon: item.icon, price: item.price, qty: 1 }];
+      return [...c, { menu_item_id: item.id, name: item.name, icon: item.icon, price: item.price, description: item.description, qty: 1 }];
     });
   }
 
@@ -81,10 +82,18 @@ export default function POS() {
   const subtotal = cart.reduce((s, x) => s + x.price * x.qty, 0);
   const total = subtotal;
 
+  function changeOrderType(t) {
+    setOrderType(t);
+    if (t === 'delivery' && customer?.address && !deliveryAddress) {
+      setDeliveryAddress(customer.address);
+    }
+  }
+
   function selectCustomer(c) {
     setCustomer(c);
     setCustQuery('');
     setCustResults([]);
+    if (orderType === 'delivery' && c.address) setDeliveryAddress(c.address);
   }
 
   function clearCustomer() {
@@ -97,6 +106,10 @@ export default function POS() {
       showToast('Delivery ke liye area select karein', 'error');
       return;
     }
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
+      showToast('Delivery address likhein', 'error');
+      return;
+    }
     setPlacing(true);
     const { data: order, error } = await supabase
       .from('orders')
@@ -104,6 +117,7 @@ export default function POS() {
         customer_id: customer?.id || null,
         order_type: orderType,
         area_id: orderType === 'delivery' ? areaId : null,
+        delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
         payment_method: paymentMethod,
         subtotal,
         total,
@@ -123,6 +137,7 @@ export default function POS() {
       menu_item_id: x.menu_item_id,
       item_name: x.name,
       icon: x.icon,
+      description: x.description || null,
       unit_price: x.price,
       quantity: x.qty,
       subtotal: x.price * x.qty,
@@ -141,6 +156,7 @@ export default function POS() {
     setCustomer(null);
     setOrderType('dine-in');
     setAreaId(null);
+    setDeliveryAddress('');
   }
 
   if (loading) {
@@ -200,7 +216,7 @@ export default function POS() {
             {['dine-in', 'takeaway', 'delivery'].map((t) => (
               <button
                 key={t}
-                onClick={() => setOrderType(t)}
+                onClick={() => changeOrderType(t)}
                 className={`flex-1 py-1.5 px-1 border-2 rounded-lg text-[11px] font-bold text-center transition-all ${
                   orderType === t ? 'bg-white text-maroon border-white' : 'border-white/30 text-white hover:bg-white/20'
                 }`}
@@ -211,16 +227,25 @@ export default function POS() {
             ))}
           </div>
           {orderType === 'delivery' && (
-            <select
-              value={areaId || ''}
-              onChange={(e) => setAreaId(Number(e.target.value))}
-              className="w-full mt-2 text-xs rounded-lg px-2 py-1.5 text-gray-800"
-            >
-              <option value="">Select area…</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
-              ))}
-            </select>
+            <>
+              <select
+                value={areaId || ''}
+                onChange={(e) => setAreaId(Number(e.target.value))}
+                className="w-full mt-2 text-xs rounded-lg px-2 py-1.5 text-gray-800"
+              >
+                <option value="">Select area…</option>
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
+                ))}
+              </select>
+              <textarea
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                placeholder="Guided address — house #, street, landmark…"
+                rows={2}
+                className="w-full mt-2 text-xs rounded-lg px-2 py-1.5 text-gray-800 resize-none"
+              />
+            </>
           )}
         </div>
 
@@ -296,6 +321,7 @@ export default function POS() {
                 <span className="text-xl flex-shrink-0">{x.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold truncate">{x.name}</div>
+                  {x.description && <div className="text-[10px] text-gray-400 truncate">{x.description}</div>}
                   <div className="text-[11px] text-orange font-bold mt-0.5">{fmtPKR(x.price)}</div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">

@@ -58,7 +58,10 @@ export default function SlipModal({ order, items, customer, onClose }) {
               <div className="w-8 h-8 bg-orange text-white rounded-lg font-black flex items-center justify-center flex-shrink-0">
                 {it.quantity}
               </div>
-              <div className="font-bold text-sm flex-1">{it.item_name}</div>
+              <div className="font-bold text-sm flex-1">
+                {it.item_name}
+                {it.description && <div className="text-[11px] font-normal text-gray-400">{it.description}</div>}
+              </div>
               <div className="text-sm font-bold text-gray-500">{fmtPKR(it.subtotal)}</div>
             </div>
           ))}
@@ -78,6 +81,11 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div className="flex justify-between text-lg font-black mt-1">
             <span>Total</span><span className="text-orange">{fmtPKR(order.total)}</span>
           </div>
+          {order.delivery_address && (
+            <div className="bg-gray-50 rounded-lg p-2.5 mt-3 text-xs text-gray-600 border-2 border-gray-100">
+              🛵 <span className="font-bold">Deliver to:</span> {order.delivery_address}
+            </div>
+          )}
           {customer && (
             <div className="text-xs text-gray-400 mt-2 text-center">{customer.name} · {customer.phone}</div>
           )}
@@ -116,10 +124,22 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div style={{ fontSize: '10px' }}>{dateStr}</div>
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           {items.map((it) => (
-            <div key={it.id || it.menu_item_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', margin: '1.5mm 0' }}>
-              <span>{it.quantity}x {it.item_name}</span>
+            <div key={it.id || it.menu_item_id} style={{ margin: '1.5mm 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>
+                <span>{it.quantity}x {it.item_name}</span>
+              </div>
+              {it.description && (
+                <div style={{ fontSize: '10px', paddingLeft: '3mm' }}>↳ {it.description}</div>
+              )}
             </div>
           ))}
+          {order.delivery_address && (
+            <>
+              <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
+              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>DELIVER TO:</div>
+              <div style={{ fontSize: '11px' }}>{order.delivery_address}</div>
+            </>
+          )}
           {order.notes && (
             <>
               <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
@@ -139,11 +159,19 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div>{order.order_number} — {dateStr}</div>
           <div>{TYPE_BADGE[order.order_type]?.lb}</div>
           {customer && <div>{customer.name} · {customer.phone}</div>}
+          {order.delivery_address && (
+            <div style={{ fontSize: '11px', marginTop: '1mm' }}>🛵 {order.delivery_address}</div>
+          )}
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           {items.map((it) => (
-            <div key={it.id || it.menu_item_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', margin: '1mm 0' }}>
-              <span>{it.quantity}x {it.item_name}</span>
-              <span>{fmtPKR(it.subtotal)}</span>
+            <div key={it.id || it.menu_item_id} style={{ margin: '1mm 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span>{it.quantity}x {it.item_name}</span>
+                <span>{fmtPKR(it.subtotal)}</span>
+              </div>
+              {it.description && (
+                <div style={{ fontSize: '10px', paddingLeft: '3mm', color: '#333' }}>↳ {it.description}</div>
+              )}
             </div>
           ))}
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
