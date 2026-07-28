@@ -4,17 +4,25 @@ import { useToast } from '../lib/ToastContext';
 import { fmtPKR, timeAgo } from '../lib/format';
 import BarRow from '../components/BarRow';
 
-const STATUS_FLOW = { queued: 'cooking', cooking: 'ready', ready: 'completed' };
-const STATUS_LABEL = { queued: 'Queued', cooking: 'Cooking', ready: 'Ready', completed: 'Completed' };
+function nextStatusFor(order) {
+  const isDelivery = order.order_type === 'delivery' || order.order_type === 'foodpanda';
+  const flow = isDelivery
+    ? { queued: 'cooking', cooking: 'dispatched', dispatched: 'completed' }
+    : { queued: 'cooking', cooking: 'completed' };
+  return flow[order.status];
+}
+const STATUS_LABEL = { queued: 'Queued', cooking: 'Cooking', ready: 'Ready', dispatched: 'Dispatched', completed: 'Completed' };
 const STATUS_CLS = {
   queued: 'bg-gray-100',
   cooking: 'bg-orange-50',
   ready: 'bg-green-50',
+  dispatched: 'bg-blue-50',
 };
 const STATUS_BADGE = {
   queued: 'bg-gray-200 text-gray-700',
   cooking: 'bg-orange-200 text-amber-800',
   ready: 'bg-green-200 text-green-800',
+  dispatched: 'bg-blue-200 text-blue-800',
 };
 
 const TYPE_META = {
@@ -42,7 +50,7 @@ export default function Dashboard() {
     const [todayQ, weekQ, liveQ, dailyQ, payQ, allOrdersQ] = await Promise.all([
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startToday),
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startWeek),
-      supabase.from('orders').select('*, order_items(*)').in('status', ['queued', 'cooking', 'ready']).order('created_at', { ascending: false }),
+      supabase.from('orders').select('*, order_items(*)').in('status', ['queued', 'cooking', 'ready', 'dispatched']).order('created_at', { ascending: false }),
       supabase.from('v_daily_sales').select('*').limit(7),
       supabase.from('v_payment_breakdown').select('*'),
       supabase.from('orders').select('order_type, status, total, created_at').limit(5000),
@@ -85,7 +93,7 @@ export default function Dashboard() {
   }, []);
 
   async function advanceStatus(order) {
-    const next = STATUS_FLOW[order.status];
+    const next = nextStatusFor(order);
     if (!next) return;
     const patch = { status: next };
     if (next === 'completed') patch.completed_at = new Date().toISOString();
@@ -162,7 +170,7 @@ export default function Dashboard() {
                 onClick={() => advanceStatus(o)}
                 className="text-xs font-bold px-2.5 py-1.5 bg-maroon text-white rounded-lg"
               >
-                {o.status === 'ready' ? 'Complete' : 'Advance →'}
+                {nextStatusFor(o) === 'completed' ? '✅ Complete' : `${STATUS_LABEL[nextStatusFor(o)]} →`}
               </button>
             </div>
           </div>

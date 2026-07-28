@@ -1,16 +1,33 @@
 import { useEffect, useMemo, useState, Fragment } from 'react';
 import { supabase } from '../lib/supabase';
 import { fmtPKR } from '../lib/format';
+import { useToast } from '../lib/ToastContext';
 import SlipModal from '../components/SlipModal';
 
 const STATUS_BADGE = {
   queued: 'bg-gray-200 text-gray-700',
   cooking: 'bg-orange-200 text-amber-800',
   ready: 'bg-green-200 text-green-800',
+  dispatched: 'bg-blue-200 text-blue-800',
   completed: 'bg-blue-100 text-blue-700',
   cancelled: 'bg-red-100 text-red-600',
 };
 const TYPE_ICON = { 'dine-in': '🍽️', takeaway: '🥡', delivery: '🛵', foodpanda: '🐼' };
+
+const DINE_TAKEAWAY_STATUSES = [
+  { value: 'queued', label: 'Queued' },
+  { value: 'cooking', label: 'Cooking' },
+  { value: 'completed', label: 'Served' },
+];
+const DELIVERY_STATUSES = [
+  { value: 'queued', label: 'Queued' },
+  { value: 'cooking', label: 'Cooking' },
+  { value: 'dispatched', label: 'Dispatched' },
+  { value: 'completed', label: 'Delivered' },
+];
+function statusOptionsFor(orderType) {
+  return orderType === 'delivery' || orderType === 'foodpanda' ? DELIVERY_STATUSES : DINE_TAKEAWAY_STATUSES;
+}
 
 const PRESETS = [
   { id: 'today', label: 'Today' },
@@ -40,6 +57,7 @@ function presetRange(preset, from, to) {
 }
 
 export default function OrdersList() {
+  const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
@@ -101,6 +119,18 @@ export default function OrdersList() {
     setCustomFrom('');
     setCustomTo('');
     setTimeout(load, 0);
+  }
+
+  async function updateStatus(order, newStatus) {
+    const patch = { status: newStatus };
+    if (newStatus === 'completed') patch.completed_at = new Date().toISOString();
+    const { error } = await supabase.from('orders').update(patch).eq('id', order.id);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    setOrders((rows) => rows.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o)));
+    showToast(`${order.order_number} → ${statusOptionsFor(order.order_type).find((s) => s.value === newStatus)?.label}`);
   }
 
   return (
@@ -206,10 +236,17 @@ export default function OrdersList() {
                     <td className="py-2.5 px-3 font-extrabold">{o.order_number}</td>
                     <td className="py-2.5 px-3">{o.customers?.name || <span className="text-gray-300">Walk-in</span>}</td>
                     <td className="py-2.5 px-3">{TYPE_ICON[o.order_type]} {o.order_type}</td>
-                    <td className="py-2.5 px-3">
-                      <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${STATUS_BADGE[o.status]}`}>
-                        {o.status}
-                      </span>
+                    <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
+                      <select
+                        value={o.status}
+                        onChange={(e) => updateStatus(o, e.target.value)}
+                        className={`text-[11px] font-extrabold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${STATUS_BADGE[o.status] || 'bg-gray-100 text-gray-700'}`}
+                      >
+                        {o.status === 'cancelled' && <option value="cancelled">Cancelled</option>}
+                        {statusOptionsFor(o.order_type).map((s) => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="py-2.5 px-3 font-extrabold">{fmtPKR(o.total)}</td>
                     <td className="py-2.5 px-3 text-gray-500 text-xs">
