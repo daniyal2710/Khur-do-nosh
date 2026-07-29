@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useShopSettings } from '../lib/ShopSettingsContext';
 
 const NAV = [
   { id: 'pos', icon: '🛒', label: 'POS' },
@@ -13,6 +14,7 @@ const NAV = [
 
 export default function TopBar({ page, setPage, onLogout }) {
   const [clock, setClock] = useState('');
+  const { settings } = useShopSettings();
 
   useEffect(() => {
     const tick = () => {
@@ -28,11 +30,19 @@ export default function TopBar({ page, setPage, onLogout }) {
   return (
     <div className="bg-maroon h-[62px] flex items-center px-3.5 gap-2.5 sticky top-0 z-[999] shadow-lg">
       <div className="flex items-center gap-2 flex-shrink-0 mr-3">
-        <div className="w-[42px] h-[42px] bg-gold rounded-[10px] text-white text-[15px] font-black flex items-center justify-center">
-          KN
-        </div>
+        {settings?.logo_url ? (
+          <img
+            src={settings.logo_url}
+            alt="Logo"
+            className="w-[42px] h-[42px] rounded-[10px] object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-[42px] h-[42px] bg-gold rounded-[10px] text-white text-[15px] font-black flex items-center justify-center">
+            KN
+          </div>
+        )}
         <div>
-          <h1 className="text-white text-[15px] leading-tight font-bold">Khurd o Nosh</h1>
+          <h1 className="text-white text-[15px] leading-tight font-bold">{settings?.shop_name || 'Khurd o Nosh'}</h1>
           <p className="text-yellow-300 text-[10px]">Order Management</p>
         </div>
       </div>

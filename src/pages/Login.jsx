@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import loginBg from '../assets/login-bg.png';
+import { useShopSettings } from '../lib/ShopSettingsContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { settings } = useShopSettings();
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -30,10 +32,18 @@ export default function Login() {
     >
       <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl w-full max-w-[380px] p-7">
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-gold rounded-2xl text-white text-xl font-black flex items-center justify-center mx-auto mb-3">
-            KN
-          </div>
-          <h1 className="text-xl font-black text-maroon">Khurd o Nosh</h1>
+          {settings?.logo_url ? (
+            <img
+              src={settings.logo_url}
+              alt="Logo"
+              className="w-14 h-14 rounded-2xl object-cover mx-auto mb-3 shadow-md"
+            />
+          ) : (
+            <div className="w-14 h-14 bg-gold rounded-2xl text-white text-xl font-black flex items-center justify-center mx-auto mb-3">
+              KN
+            </div>
+          )}
+          <h1 className="text-xl font-black text-maroon">{settings?.shop_name || 'Khurd o Nosh'}</h1>
           <p className="text-gray-400 text-xs mt-1">Return POS</p>
         </div>
 

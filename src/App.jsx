@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { ToastProvider } from './lib/ToastContext';
+import { ShopSettingsProvider } from './lib/ShopSettingsContext';
 import TopBar from './components/TopBar';
 import Login from './pages/Login';
 import POS from './pages/POS';
@@ -23,7 +24,7 @@ const PAGES = {
   admin: Admin,
 };
 
-export default function App() {
+function AppShell() {
   const [page, setPage] = useState('pos');
   const [session, setSession] = useState(undefined); // undefined = checking, null = logged out
 
@@ -50,5 +51,13 @@ export default function App() {
       <TopBar page={page} setPage={setPage} onLogout={() => supabase.auth.signOut()} />
       <Page />
     </ToastProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ShopSettingsProvider>
+      <AppShell />
+    </ShopSettingsProvider>
   );
 }

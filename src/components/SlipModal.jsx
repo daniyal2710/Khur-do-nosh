@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { fmtPKR } from '../lib/format';
+import { useShopSettings } from '../lib/ShopSettingsContext';
 
 const TYPE_BADGE = {
   'dine-in': { cls: 'bg-yellow-100 text-yellow-800', lb: 'Dine-in' },
@@ -9,6 +10,10 @@ const TYPE_BADGE = {
 };
 
 export default function SlipModal({ order, items, customer, onClose }) {
+  const { settings } = useShopSettings();
+  const shopName = settings?.shop_name || 'Khurd o Nosh';
+  const tagline = settings?.tagline || 'Khao, Piyo, Khush Raho';
+  const footer = settings?.receipt_footer || 'Shukriya! Dobara tashreef laayein.';
   const badge = TYPE_BADGE[order.order_type] || TYPE_BADGE['dine-in'];
   const dateStr = new Date(order.created_at || Date.now()).toLocaleString('en-PK');
 
@@ -37,7 +42,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
     if (!customer?.phone) return;
     const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
     const lines = items.map((it) => `${it.quantity}x ${it.item_name}`).join('\n');
-    const msg = `Khurd o Nosh 🍕\nOrder ${order.order_number}\n${lines}\n\nTotal: ${fmtPKR(order.total)}\nShukriya!`;
+    const msg = `${shopName} 🍕\nOrder ${order.order_number}\n${lines}\n\nTotal: ${fmtPKR(order.total)}\nShukriya!`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -47,7 +52,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
         {/* ─────────── ON-SCREEN PREVIEW (not printed) ─────────── */}
         <div className="bg-maroon p-4 rounded-t-2xl text-center">
           <h2 className="text-white text-xl font-black tracking-wide">{order.order_number}</h2>
-          <p className="text-yellow-300 text-xs font-bold mt-1">Khurd o Nosh</p>
+          <p className="text-yellow-300 text-xs font-bold mt-1">{shopName}</p>
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-black mt-2 ${badge.cls}`}>
             {badge.lb}
           </span>
@@ -115,7 +120,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
       {/* ─────────── HIDDEN 80mm THERMAL TEMPLATES (print-only) ─────────── */}
       <div id="kitchen-print" className="hidden">
         <div style={{ padding: '3mm', fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#000' }}>
-          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>KHURD O NOSH</div>
+          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }}>{shopName.toUpperCase()}</div>
           <div style={{ textAlign: 'center', fontSize: '11px' }}>KITCHEN COPY</div>
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px' }}>
@@ -154,8 +159,15 @@ export default function SlipModal({ order, items, customer, onClose }) {
 
       <div id="customer-print" className="hidden">
         <div style={{ padding: '3mm', fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#000' }}>
-          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '15px' }}>KHURD O NOSH</div>
-          <div style={{ textAlign: 'center', fontSize: '10px' }}>Khao, Piyo, Khush Raho</div>
+          {settings?.logo_url && (
+            <img
+              src={settings.logo_url}
+              alt="Logo"
+              style={{ display: 'block', margin: '0 auto 2mm', maxWidth: '30mm', maxHeight: '20mm', objectFit: 'contain' }}
+            />
+          )}
+          <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '15px' }}>{shopName.toUpperCase()}</div>
+          <div style={{ textAlign: 'center', fontSize: '10px' }}>{tagline}</div>
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           <div>{order.order_number} — {dateStr}</div>
           <div>{TYPE_BADGE[order.order_type]?.lb}</div>
@@ -194,7 +206,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
             <span>TOTAL</span><span>{fmtPKR(order.total)}</span>
           </div>
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
-          <div style={{ textAlign: 'center', fontSize: '10px' }}>Shukriya! Dobara tashreef laayein.</div>
+          <div style={{ textAlign: 'center', fontSize: '10px' }}>{footer}</div>
         </div>
       </div>
     </div>
