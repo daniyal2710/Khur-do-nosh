@@ -6,6 +6,7 @@ import TopBar from './components/TopBar';
 import Login from './pages/Login';
 import POS from './pages/POS';
 import OrdersList from './pages/OrdersList';
+import KDS from './pages/KDS';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
 import Products from './pages/Products';
@@ -16,6 +17,7 @@ import Admin from './pages/Admin';
 const PAGES = {
   pos: POS,
   orders: OrdersList,
+  kds: KDS,
   dashboard: Dashboard,
   sales: Sales,
   products: Products,

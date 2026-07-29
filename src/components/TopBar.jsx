@@ -4,6 +4,7 @@ import { useShopSettings } from '../lib/ShopSettingsContext';
 const NAV = [
   { id: 'pos', icon: '🛒', label: 'POS' },
   { id: 'orders', icon: '🧾', label: 'Orders' },
+  { id: 'kds', icon: '🔥', label: 'KDS' },
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
   { id: 'sales', icon: '💰', label: 'Sales' },
   { id: 'products', icon: '📦', label: 'Products' },
