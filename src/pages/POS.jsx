@@ -99,7 +99,7 @@ export default function POS() {
 
   function selectOrderType(t) {
     setOrderType(t);
-    if ((t === 'delivery') && customer?.address && !deliveryAddress) {
+    if ((t === 'delivery' || t === 'foodpanda') && customer?.address && !deliveryAddress) {
       setDeliveryAddress(customer.address);
     }
   }
@@ -108,7 +108,7 @@ export default function POS() {
     setCustomer(c);
     setCustQuery('');
     setCustResults([]);
-    if (orderType === 'delivery' && c.address) setDeliveryAddress(c.address);
+    if ((orderType === 'delivery' || orderType === 'foodpanda') && c.address) setDeliveryAddress(c.address);
   }
 
   function clearCustomer() {
@@ -141,12 +141,17 @@ export default function POS() {
   function canContinueFromType() {
     if (!orderType) return false;
     if ((orderType === 'delivery' || orderType === 'foodpanda') && !areaId) return false;
-    if (orderType === 'delivery' && !deliveryAddress.trim()) return false;
+    if ((orderType === 'delivery' || orderType === 'foodpanda') && !deliveryAddress.trim()) return false;
     return true;
   }
 
   async function placeOrder() {
     if (!cart.length) return;
+    if ((orderType === 'delivery' || orderType === 'foodpanda') && !customer) {
+      showToast('Delivery/Food Panda ke liye customer number zaroori hai', 'error');
+      setStep('review');
+      return;
+    }
     setPlacing(true);
     const { data: order, error } = await supabase
       .from('orders')
@@ -154,7 +159,7 @@ export default function POS() {
         customer_id: customer?.id || null,
         order_type: orderType,
         area_id: (orderType === 'delivery' || orderType === 'foodpanda') ? areaId : null,
-        delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
+        delivery_address: (orderType === 'delivery' || orderType === 'foodpanda') ? deliveryAddress.trim() : null,
         payment_method: paymentMethod,
         subtotal,
         total,
@@ -269,7 +274,7 @@ export default function POS() {
                     ))}
                   </select>
                 </div>
-                {orderType === 'delivery' && (
+                {(orderType === 'delivery' || orderType === 'foodpanda') && (
                   <div>
                     <label className="text-[11px] font-black text-gray-500 uppercase">Guided Address</label>
                     <textarea
@@ -297,64 +302,112 @@ export default function POS() {
 
       {/* ───────────────── STEP 2: MENU BROWSING ───────────────── */}
       {step === 'menu' && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex overflow-x-auto hide-scrollbar bg-white border-b-2 border-gray-100 flex-shrink-0">
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveCat(c.id)}
-                className={`flex flex-col items-center px-5 py-3.5 border-b-[4px] gap-1 flex-shrink-0 whitespace-nowrap text-xs font-bold transition-all ${
-                  activeCat === c.id ? 'border-orange text-orange bg-orange-50' : 'border-transparent text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <span className="text-2xl">{c.icon}</span>
-                {c.name}
+        <div className="flex-1 flex overflow-hidden">
+          {/* LEFT SIDEBAR — running order */}
+          <div className="w-[300px] flex-shrink-0 bg-white border-r-2 border-gray-100 flex flex-col">
+            <div className="bg-maroon p-3.5 flex-shrink-0">
+              <button onClick={() => setStep('type')} className="text-[11px] font-bold text-white/70 hover:text-white mb-1">
+                ← Order Type
               </button>
-            ))}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 pb-24 grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', alignContent: 'start' }}>
-            {visibleMenu.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => addToCart(item)}
-                className={`bg-white rounded-2xl p-4 cursor-pointer border-2 shadow-sm hover:shadow-lg active:scale-[.96] transition-all text-center relative select-none ${
-                  justAdded === item.id ? 'border-greenok bg-green-50' : 'border-transparent hover:border-orange'
-                }`}
-              >
-                <div className="text-4xl mb-2 leading-none">{item.icon}</div>
-                <div className="text-sm font-bold leading-tight">{item.name}</div>
-                {item.description && <div className="text-[10px] text-gray-400 mt-0.5">{item.description}</div>}
-                <div className="text-base font-black text-orange mt-2">{fmtPKR(item.price)}</div>
-                <div className="absolute bottom-2.5 right-2.5 w-8 h-8 bg-orange text-white rounded-full font-black text-lg flex items-center justify-center pointer-events-none shadow-md">
-                  {justAdded === item.id ? '✓' : '+'}
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{ORDER_TYPES.find((t) => t.id === orderType)?.icon}</span>
+                <span className="text-white font-black text-sm">{ORDER_TYPES.find((t) => t.id === orderType)?.label}</span>
               </div>
-            ))}
-            {!visibleMenu.length && (
-              <div className="col-span-full text-center text-gray-400 py-10">Is category mein items nahi hain</div>
-            )}
-          </div>
+              <div className="text-yellow-300 text-[11px] font-bold mt-1">
+                {cartCount ? `${cartCount} items in order` : 'Order is empty'}
+              </div>
+            </div>
 
-          {/* FLOATING CART BAR */}
-          <div className="flex-shrink-0 border-t-2 border-gray-100 bg-white p-3 flex items-center gap-3">
-            <button onClick={() => setStep('type')} className="text-xs font-bold px-3 py-3 text-gray-500">
-              ← Order Type
-            </button>
-            <div className="flex-1 text-center">
-              {cartCount > 0 ? (
-                <span className="text-sm font-black">{cartCount} items · <span className="text-orange">{fmtPKR(total)}</span></span>
+            <div className="flex-1 overflow-y-auto p-2.5">
+              {!cart.length ? (
+                <div className="text-center py-10 px-4 text-gray-300">
+                  <div className="text-5xl">🛒</div>
+                  <p className="text-[13px] mt-2 font-semibold text-gray-300">Menu se items tap karein</p>
+                </div>
               ) : (
-                <span className="text-sm text-gray-300 font-semibold">Menu se items tap karein add karne ke liye</span>
+                cart.map((x) => (
+                  <div key={x.menu_item_id} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-100">
+                    <span className="text-xl flex-shrink-0">{x.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold truncate">{x.name}</div>
+                      <div className="text-[11px] text-orange font-bold mt-0.5">{fmtPKR(x.price)}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => changeQty(x.menu_item_id, -1)}
+                        className="w-[26px] h-[26px] rounded-full bg-orange-100 text-orange font-black flex items-center justify-center"
+                      >
+                        −
+                      </button>
+                      <span className="text-sm font-black min-w-[18px] text-center">{x.qty}</span>
+                      <button
+                        onClick={() => changeQty(x.menu_item_id, 1)}
+                        className="w-[26px] h-[26px] rounded-full bg-orange text-white font-black flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-            <button
-              onClick={() => setStep('review')}
-              disabled={!cart.length}
-              className="px-6 py-3 rounded-xl font-black text-sm text-white bg-orange hover:bg-orangedark disabled:bg-gray-300 transition-all shadow-md"
-            >
-              Review Order →
-            </button>
+
+            <div className="p-3.5 border-t-2 border-gray-100 flex-shrink-0">
+              <div className="flex justify-between text-[13px] text-gray-500 mb-1">
+                <span>Subtotal</span><span>{fmtPKR(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-black mb-2.5">
+                <span>Total</span><span className="text-orange">{fmtPKR(total)}</span>
+              </div>
+              <button
+                onClick={() => setStep('review')}
+                disabled={!cart.length}
+                className="w-full py-3 rounded-xl font-black text-sm text-white bg-orange hover:bg-orangedark disabled:bg-gray-300 transition-all shadow-md"
+              >
+                Review Order →
+              </button>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE — categories + menu grid */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex overflow-x-auto hide-scrollbar bg-white border-b-2 border-gray-100 flex-shrink-0">
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveCat(c.id)}
+                  className={`flex flex-col items-center px-5 py-3.5 border-b-[4px] gap-1 flex-shrink-0 whitespace-nowrap text-xs font-bold transition-all ${
+                    activeCat === c.id ? 'border-orange text-orange bg-orange-50' : 'border-transparent text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-2xl">{c.icon}</span>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', alignContent: 'start' }}>
+              {visibleMenu.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => addToCart(item)}
+                  className={`bg-white rounded-2xl p-4 cursor-pointer border-2 shadow-sm hover:shadow-lg active:scale-[.96] transition-all text-center relative select-none ${
+                    justAdded === item.id ? 'border-greenok bg-green-50' : 'border-transparent hover:border-orange'
+                  }`}
+                >
+                  <div className="text-4xl mb-2 leading-none">{item.icon}</div>
+                  <div className="text-sm font-bold leading-tight">{item.name}</div>
+                  {item.description && <div className="text-[10px] text-gray-400 mt-0.5">{item.description}</div>}
+                  <div className="text-base font-black text-orange mt-2">{fmtPKR(item.price)}</div>
+                  <div className="absolute bottom-2.5 right-2.5 w-8 h-8 bg-orange text-white rounded-full font-black text-lg flex items-center justify-center pointer-events-none shadow-md">
+                    {justAdded === item.id ? '✓' : '+'}
+                  </div>
+                </div>
+              ))}
+              {!visibleMenu.length && (
+                <div className="col-span-full text-center text-gray-400 py-10">Is category mein items nahi hain</div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -372,8 +425,8 @@ export default function POS() {
                 <span className="text-2xl">{ORDER_TYPES.find((t) => t.id === orderType)?.icon}</span>
                 <span className="font-black text-maroon">{ORDER_TYPES.find((t) => t.id === orderType)?.label}</span>
               </div>
-              {orderType === 'delivery' && deliveryAddress && (
-                <p className="text-xs text-gray-500 mt-1">🛵 {deliveryAddress}</p>
+              {(orderType === 'delivery' || orderType === 'foodpanda') && deliveryAddress && (
+                <p className="text-xs text-gray-500 mt-1">📍 {deliveryAddress}</p>
               )}
             </div>
 
@@ -421,8 +474,10 @@ export default function POS() {
             </div>
 
             {/* CUSTOMER */}
-            <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 mb-4">
-              <div className="text-[11px] font-black text-orange uppercase tracking-wide mb-2">👤 Customer (optional)</div>
+            <div className={`bg-white rounded-2xl p-4 border-2 mb-4 ${(orderType === 'delivery' || orderType === 'foodpanda') && !customer ? 'border-red-300' : 'border-gray-100'}`}>
+              <div className="text-[11px] font-black text-orange uppercase tracking-wide mb-2">
+                👤 Customer {(orderType === 'delivery' || orderType === 'foodpanda') ? <span className="text-red-500">(required)</span> : <span className="text-gray-400 normal-case font-semibold">(optional)</span>}
+              </div>
               {customer ? (
                 <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-2 flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gold text-white text-xs font-black flex items-center justify-center flex-shrink-0">
@@ -513,10 +568,14 @@ export default function POS() {
               </div>
               <button
                 onClick={placeOrder}
-                disabled={!cart.length || placing}
+                disabled={!cart.length || placing || ((orderType === 'delivery' || orderType === 'foodpanda') && !customer)}
                 className="w-full py-4 rounded-2xl font-black text-base text-white bg-orange hover:bg-orangedark disabled:bg-gray-300 transition-all shadow-md"
               >
-                {placing ? 'Placing…' : `✅ Place Order · ${fmtPKR(total)}`}
+                {placing
+                  ? 'Placing…'
+                  : (orderType === 'delivery' || orderType === 'foodpanda') && !customer
+                  ? '⚠️ Customer number zaroori hai'
+                  : `✅ Place Order · ${fmtPKR(total)}`}
               </button>
             </div>
           </div>
