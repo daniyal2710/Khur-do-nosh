@@ -6,6 +6,7 @@ import CategoryModal from '../components/CategoryModal';
 import MenuItemModal from '../components/MenuItemModal';
 import AreaModal from '../components/AreaModal';
 import ShopSettingsPanel from '../components/ShopSettingsPanel';
+import StaffPanel from '../components/StaffPanel';
 
 export default function Admin() {
   const { showToast } = useToast();
@@ -110,6 +111,7 @@ export default function Admin() {
         {[
           { id: 'catalog', label: '🍽️ Menu & Areas' },
           { id: 'settings', label: '🏪 Shop Settings' },
+          { id: 'staff', label: '👥 Staff' },
         ].map((t) => (
           <button
             key={t.id}
@@ -124,6 +126,7 @@ export default function Admin() {
       </div>
 
       {adminTab === 'settings' && <ShopSettingsPanel />}
+      {adminTab === 'staff' && <StaffPanel />}
 
       {adminTab === 'catalog' && (
         <>

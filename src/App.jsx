@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
-import { ToastProvider } from './lib/ToastContext';
+import { ToastProvider, useToast } from './lib/ToastContext';
 import { ShopSettingsProvider } from './lib/ShopSettingsContext';
+import { StaffProvider, useStaff } from './lib/StaffContext';
+import { canAccess, firstAllowedPage } from './lib/roles';
 import TopBar from './components/TopBar';
 import Login from './pages/Login';
 import POS from './pages/POS';
@@ -26,8 +28,38 @@ const PAGES = {
   admin: Admin,
 };
 
+function AuthedShell() {
+  const { showToast } = useToast();
+  const { profile } = useStaff();
+  const [page, setPage] = useState(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.is_active === false) {
+      showToast('Ye account deactivate ho chuka hai. Admin se rabta karein.', 'error');
+      supabase.auth.signOut();
+      return;
+    }
+    setPage((p) => (p && canAccess(profile.role, p) ? p : firstAllowedPage(profile.role)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  if (profile === undefined || !page) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
+  }
+  if (profile === null) return null; // signing out
+
+  const Page = PAGES[page];
+
+  return (
+    <>
+      <TopBar page={page} setPage={setPage} onLogout={() => supabase.auth.signOut()} role={profile.role} />
+      <Page />
+    </>
+  );
+}
+
 function AppShell() {
-  const [page, setPage] = useState('pos');
   const [session, setSession] = useState(undefined); // undefined = checking, null = logged out
 
   useEffect(() => {
@@ -46,12 +78,11 @@ function AppShell() {
     return <Login />;
   }
 
-  const Page = PAGES[page];
-
   return (
     <ToastProvider>
-      <TopBar page={page} setPage={setPage} onLogout={() => supabase.auth.signOut()} />
-      <Page />
+      <StaffProvider>
+        <AuthedShell />
+      </StaffProvider>
     </ToastProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useShopSettings } from '../lib/ShopSettingsContext';
+import { canAccess, ROLE_LABELS } from '../lib/roles';
 
 const NAV = [
   { id: 'pos', icon: '🛒', label: 'POS' },
@@ -13,9 +14,10 @@ const NAV = [
   { id: 'admin', icon: '⚙️', label: 'Admin' },
 ];
 
-export default function TopBar({ page, setPage, onLogout }) {
+export default function TopBar({ page, setPage, onLogout, role }) {
   const [clock, setClock] = useState('');
   const { settings } = useShopSettings();
+  const visibleNav = NAV.filter((n) => canAccess(role, n.id));
 
   useEffect(() => {
     const tick = () => {
@@ -48,7 +50,7 @@ export default function TopBar({ page, setPage, onLogout }) {
         </div>
       </div>
       <div className="flex gap-1.5 flex-1 overflow-x-auto hide-scrollbar">
-        {NAV.map((n) => (
+        {visibleNav.map((n) => (
           <button
             key={n.id}
             onClick={() => setPage(n.id)}
@@ -63,7 +65,12 @@ export default function TopBar({ page, setPage, onLogout }) {
           </button>
         ))}
       </div>
-      <div className="text-yellow-300 text-[13px] font-bold flex-shrink-0 ml-2">{clock}</div>
+      {role && (
+        <span className="text-[10px] font-bold px-2 py-1 bg-white/15 text-amber-100 rounded-full flex-shrink-0">
+          {ROLE_LABELS[role] || role}
+        </span>
+      )}
+      <div className="text-yellow-300 text-[13px] font-bold flex-shrink-0 ml-1">{clock}</div>
       <button
         onClick={onLogout}
         className="text-white/70 hover:text-white text-lg flex-shrink-0 ml-1"
