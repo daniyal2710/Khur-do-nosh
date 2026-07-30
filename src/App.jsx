@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase';
 import { ToastProvider, useToast } from './lib/ToastContext';
 import { ShopSettingsProvider } from './lib/ShopSettingsContext';
 import { StaffProvider, useStaff } from './lib/StaffContext';
+import { RoleAccessProvider, useRoleAccess } from './lib/RoleAccessContext';
 import { canAccess, firstAllowedPage } from './lib/roles';
 import TopBar from './components/TopBar';
 import Login from './pages/Login';
@@ -31,20 +32,21 @@ const PAGES = {
 function AuthedShell() {
   const { showToast } = useToast();
   const { profile } = useStaff();
+  const { access } = useRoleAccess();
   const [page, setPage] = useState(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || !access) return;
     if (profile.is_active === false) {
       showToast('Ye account deactivate ho chuka hai. Admin se rabta karein.', 'error');
       supabase.auth.signOut();
       return;
     }
-    setPage((p) => (p && canAccess(profile.role, p) ? p : firstAllowedPage(profile.role)));
+    setPage((p) => (p && canAccess(profile.role, p, access) ? p : firstAllowedPage(profile.role, access)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  }, [profile, access]);
 
-  if (profile === undefined || !page) {
+  if (profile === undefined || !access || !page) {
     return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
   }
   if (profile === null) return null; // signing out
@@ -53,7 +55,7 @@ function AuthedShell() {
 
   return (
     <>
-      <TopBar page={page} setPage={setPage} onLogout={() => supabase.auth.signOut()} role={profile.role} />
+      <TopBar page={page} setPage={setPage} onLogout={() => supabase.auth.signOut()} role={profile.role} access={access} />
       <Page />
     </>
   );
@@ -81,7 +83,9 @@ function AppShell() {
   return (
     <ToastProvider>
       <StaffProvider>
-        <AuthedShell />
+        <RoleAccessProvider>
+          <AuthedShell />
+        </RoleAccessProvider>
       </StaffProvider>
     </ToastProvider>
   );

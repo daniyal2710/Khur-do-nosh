@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../lib/ToastContext';
 import { useStaff } from '../lib/StaffContext';
-import { ROLE_LABELS } from '../lib/roles';
-
-const ROLES = ['admin', 'manager', 'cashier', 'kitchen'];
+import { ROLE_LABELS, ASSIGNABLE_ROLES } from '../lib/roles';
 
 export default function StaffPanel() {
   const { showToast } = useToast();
   const { profile: myProfile } = useStaff();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const assignableRoles = ASSIGNABLE_ROLES.filter((r) => r !== 'super_admin' || myProfile?.role === 'super_admin');
 
   async function load() {
     const { data } = await supabase.from('staff_profiles').select('*').order('created_at');
@@ -65,15 +64,19 @@ export default function StaffPanel() {
                 <div className="text-[11px] text-gray-400">{p.email}</div>
               </td>
               <td className="py-2.5">
-                <select
-                  value={p.role}
-                  onChange={(e) => updateRole(p, e.target.value)}
-                  className="text-xs font-bold border-2 border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-orange"
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                  ))}
-                </select>
+                {p.role === 'super_admin' && myProfile?.role !== 'super_admin' ? (
+                  <span className="text-xs font-bold text-gray-500">{ROLE_LABELS.super_admin}</span>
+                ) : (
+                  <select
+                    value={p.role}
+                    onChange={(e) => updateRole(p, e.target.value)}
+                    className="text-xs font-bold border-2 border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-orange"
+                  >
+                    {assignableRoles.map((r) => (
+                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                    ))}
+                  </select>
+                )}
               </td>
               <td className="py-2.5">
                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>

@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useShopSettings } from '../lib/ShopSettingsContext';
-import { canAccess, ROLE_LABELS } from '../lib/roles';
+import { canAccess, ROLE_LABELS, PAGES } from '../lib/roles';
 
-const NAV = [
-  { id: 'pos', icon: '🛒', label: 'POS' },
-  { id: 'orders', icon: '🧾', label: 'Orders' },
-  { id: 'kds', icon: '🔥', label: 'KDS' },
-  { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-  { id: 'sales', icon: '💰', label: 'Sales' },
-  { id: 'products', icon: '📦', label: 'Products' },
-  { id: 'area', icon: '📍', label: 'Area' },
-  { id: 'customers', icon: '👥', label: 'Customers' },
-  { id: 'admin', icon: '⚙️', label: 'Admin' },
-];
-
-export default function TopBar({ page, setPage, onLogout, role }) {
+export default function TopBar({ page, setPage, onLogout, role, access }) {
   const [clock, setClock] = useState('');
   const { settings } = useShopSettings();
-  const visibleNav = NAV.filter((n) => canAccess(role, n.id));
+  const visibleNav = PAGES.filter((n) => canAccess(role, n.id, access));
 
   useEffect(() => {
     const tick = () => {

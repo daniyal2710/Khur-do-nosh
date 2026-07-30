@@ -7,9 +7,13 @@ import MenuItemModal from '../components/MenuItemModal';
 import AreaModal from '../components/AreaModal';
 import ShopSettingsPanel from '../components/ShopSettingsPanel';
 import StaffPanel from '../components/StaffPanel';
+import AccessControlPanel from '../components/AccessControlPanel';
+import { useStaff } from '../lib/StaffContext';
 
 export default function Admin() {
   const { showToast } = useToast();
+  const { profile } = useStaff();
+  const isSuperAdmin = profile?.role === 'super_admin';
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -112,6 +116,7 @@ export default function Admin() {
           { id: 'catalog', label: '🍽️ Menu & Areas' },
           { id: 'settings', label: '🏪 Shop Settings' },
           { id: 'staff', label: '👥 Staff' },
+          ...(isSuperAdmin ? [{ id: 'access', label: '🔐 Access Control' }] : []),
         ].map((t) => (
           <button
             key={t.id}
@@ -126,6 +131,7 @@ export default function Admin() {
       </div>
 
       {adminTab === 'settings' && <ShopSettingsPanel />}
+      {adminTab === 'access' && isSuperAdmin && <AccessControlPanel />}
       {adminTab === 'staff' && <StaffPanel />}
 
       {adminTab === 'catalog' && (
