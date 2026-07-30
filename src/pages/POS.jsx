@@ -20,6 +20,7 @@ export default function POS() {
   const [categories, setCategories] = useState([]);
   const [menu, setMenu] = useState([]);
   const [areas, setAreas] = useState([]);
+  const [tables, setTables] = useState([]);
   const [activeCat, setActiveCat] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,7 @@ export default function POS() {
   const [cart, setCart] = useState([]); // {menu_item_id, name, icon, price, qty, description}
   const [orderType, setOrderType] = useState(null);
   const [areaId, setAreaId] = useState(null);
+  const [tableId, setTableId] = useState(null);
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [notes, setNotes] = useState('');
@@ -41,14 +43,16 @@ export default function POS() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: cats }, { data: items }, { data: ar }] = await Promise.all([
+      const [{ data: cats }, { data: items }, { data: ar }, { data: tb }] = await Promise.all([
         supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('menu_items').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('areas').select('*').order('name'),
+        supabase.from('dining_tables').select('*').order('name'),
       ]);
       setCategories(cats || []);
       setMenu(items || []);
       setAreas(ar || []);
+      setTables(tb || []);
       if (cats && cats.length) setActiveCat(cats[0].id);
       setLoading(false);
     })();
@@ -121,6 +125,7 @@ export default function POS() {
     setCustQuery('');
     setOrderType(null);
     setAreaId(null);
+    setTableId(null);
     setDeliveryAddress('');
     setNotes('');
     setPaymentMethod('cash');
@@ -160,6 +165,7 @@ export default function POS() {
         order_type: orderType,
         area_id: (orderType === 'delivery' || orderType === 'foodpanda') ? areaId : null,
         delivery_address: (orderType === 'delivery' || orderType === 'foodpanda') ? deliveryAddress.trim() : null,
+        table_id: orderType === 'dine-in' ? tableId : null,
         payment_method: paymentMethod,
         subtotal,
         total,
@@ -191,6 +197,10 @@ export default function POS() {
     if (itemsErr) {
       showToast(itemsErr.message, 'error');
       return;
+    }
+
+    if (orderType === 'dine-in' && tableId) {
+      await supabase.from('dining_tables').update({ status: 'occupied' }).eq('id', tableId);
     }
 
     showToast(`Order ${order.order_number} place ho gaya`);
@@ -259,6 +269,34 @@ export default function POS() {
               ))}
             </div>
 
+            {orderType === 'dine-in' && tables.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 mb-5">
+                <label className="text-[11px] font-black text-gray-500 uppercase mb-2 block">🪑 Table (optional)</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {tables.map((t) => {
+                    const disabled = t.status === 'occupied' && tableId !== t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setTableId(tableId === t.id ? null : t.id)}
+                        disabled={disabled}
+                        className={`py-2.5 rounded-lg border-2 text-center transition-all ${
+                          tableId === t.id
+                            ? 'border-orange bg-orange-50'
+                            : disabled
+                            ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                            : 'border-gray-100 hover:border-orange-200'
+                        }`}
+                      >
+                        <div className="text-sm font-black">{t.name}</div>
+                        <div className="text-[9px] text-gray-400">{t.status === 'occupied' ? 'Occupied' : `${t.capacity} seats`}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {(orderType === 'delivery' || orderType === 'foodpanda') && (
               <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 mb-5 space-y-3">
                 <div>
@@ -318,6 +356,11 @@ export default function POS() {
               </div>
               {(orderType === 'delivery' || orderType === 'foodpanda') && deliveryAddress && (
                 <div className="text-white/70 text-[10px] mt-1.5 leading-snug">📍 {deliveryAddress}</div>
+              )}
+              {orderType === 'dine-in' && tableId && (
+                <div className="text-white/70 text-[10px] mt-1.5 leading-snug">
+                  🪑 {tables.find((t) => t.id === tableId)?.name}
+                </div>
               )}
             </div>
 

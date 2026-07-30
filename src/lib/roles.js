@@ -17,6 +17,7 @@ export const PAGES = [
   { id: 'pos', icon: '🛒', label: 'POS' },
   { id: 'orders', icon: '🧾', label: 'Orders' },
   { id: 'kds', icon: '🔥', label: 'KDS' },
+  { id: 'tables', icon: '🪑', label: 'Tables' },
   { id: 'dashboard', icon: '📊', label: 'Dashboard' },
   { id: 'sales', icon: '💰', label: 'Sales' },
   { id: 'products', icon: '📦', label: 'Products' },

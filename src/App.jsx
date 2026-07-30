@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import POS from './pages/POS';
 import OrdersList from './pages/OrdersList';
 import KDS from './pages/KDS';
+import Tables from './pages/Tables';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
 import Products from './pages/Products';
@@ -21,6 +22,7 @@ const PAGES = {
   pos: POS,
   orders: OrdersList,
   kds: KDS,
+  tables: Tables,
   dashboard: Dashboard,
   sales: Sales,
   products: Products,

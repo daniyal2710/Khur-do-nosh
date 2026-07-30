@@ -5,6 +5,7 @@ import { fmtPKR } from '../lib/format';
 import CategoryModal from '../components/CategoryModal';
 import MenuItemModal from '../components/MenuItemModal';
 import AreaModal from '../components/AreaModal';
+import TableModal from '../components/TableModal';
 import ShopSettingsPanel from '../components/ShopSettingsPanel';
 import StaffPanel from '../components/StaffPanel';
 import AccessControlPanel from '../components/AccessControlPanel';
@@ -17,23 +18,27 @@ export default function Admin() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [areas, setAreas] = useState([]);
+  const [tables, setTables] = useState([]);
   const [activeCat, setActiveCat] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [catModal, setCatModal] = useState(null); // {} = new, {category} = edit, null = closed
   const [itemModal, setItemModal] = useState(null);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
   const [adminTab, setAdminTab] = useState('catalog'); // 'catalog' | 'settings'
 
   async function loadAll() {
-    const [{ data: cats }, { data: mi }, { data: ar }] = await Promise.all([
+    const [{ data: cats }, { data: mi }, { data: ar }, { data: tb }] = await Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('menu_items').select('*').order('sort_order'),
       supabase.from('areas').select('*').order('name'),
+      supabase.from('dining_tables').select('*').order('name'),
     ]);
     setCategories(cats || []);
     setItems(mi || []);
     setAreas(ar || []);
+    setTables(tb || []);
     setLoading(false);
   }
 
@@ -82,6 +87,13 @@ export default function Admin() {
     const { error } = await supabase.from('areas').delete().eq('id', area.id);
     if (error) showToast(error.message.includes('foreign key') ? 'Ye area kisi order se linked hai, delete nahi ho sakta' : error.message, 'error');
     else { showToast('Area delete ho gaya'); loadAll(); }
+  }
+
+  async function deleteTable(table) {
+    if (!window.confirm(`"${table.name}" table delete karna chahte hain?`)) return;
+    const { error } = await supabase.from('dining_tables').delete().eq('id', table.id);
+    if (error) showToast(error.message.includes('foreign key') ? 'Ye table kisi order se linked hai, delete nahi ho sakta' : error.message, 'error');
+    else { showToast('Table delete ho gayi'); loadAll(); }
   }
 
   if (loading) return <div className="p-10 text-center text-gray-400">Loading…</div>;
@@ -208,6 +220,34 @@ export default function Admin() {
         </div>
       </div>
 
+      {/* DINING TABLES */}
+      <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-extrabold flex items-center gap-1.5">🪑 Dining Tables</h3>
+          <button
+            onClick={() => setShowTableModal(true)}
+            className="ml-auto px-3.5 py-1.5 bg-orange text-white rounded-lg text-[12px] font-bold"
+          >
+            + New Table
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tables.map((t) => (
+            <div key={t.id} className="flex items-center gap-2 bg-gray-50 border-2 border-gray-100 rounded-full pl-3 pr-1.5 py-1.5">
+              <span className="text-sm font-bold">🪑 {t.name} <span className="text-gray-400 font-normal">({t.capacity} seats)</span></span>
+              <button
+                onClick={() => deleteTable(t)}
+                className="w-6 h-6 flex items-center justify-center bg-red-50 text-red-600 rounded-full text-xs font-bold"
+                title="Delete table"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {!tables.length && <p className="text-gray-400 text-sm py-2">Abhi koi table nahi hai — "+ New Table" se banayein</p>}
+        </div>
+      </div>
+
       {/* ITEMS FOR SELECTED CATEGORY */}
       {activeCat ? (
         <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100">
@@ -273,6 +313,13 @@ export default function Admin() {
         <AreaModal
           onClose={() => setShowAreaModal(false)}
           onSaved={() => { setShowAreaModal(false); loadAll(); }}
+        />
+      )}
+
+      {showTableModal && (
+        <TableModal
+          onClose={() => setShowTableModal(false)}
+          onSaved={() => { setShowTableModal(false); loadAll(); }}
         />
       )}
 
