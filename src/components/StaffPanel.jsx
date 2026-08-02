@@ -10,6 +10,7 @@ export default function StaffPanel() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const assignableRoles = ASSIGNABLE_ROLES.filter((r) => r !== 'super_admin' || myProfile?.role === 'super_admin');
+  const visibleStaff = staff.filter((p) => p.role !== 'super_admin' || myProfile?.role === 'super_admin');
 
   async function load() {
     const { data } = await supabase.from('staff_profiles').select('*').order('created_at');
@@ -57,7 +58,7 @@ export default function StaffPanel() {
           </tr>
         </thead>
         <tbody>
-          {staff.map((p) => (
+          {visibleStaff.map((p) => (
             <tr key={p.id} className="border-b border-gray-50 last:border-0">
               <td className="py-2.5">
                 <div className="font-extrabold">{p.full_name || p.email}</div>
@@ -93,7 +94,7 @@ export default function StaffPanel() {
               </td>
             </tr>
           ))}
-          {!staff.length && (
+          {!visibleStaff.length && (
             <tr><td colSpan={4} className="text-center text-gray-400 py-6">Koi staff account nahi mila</td></tr>
           )}
         </tbody>

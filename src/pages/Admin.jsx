@@ -10,11 +10,15 @@ import ShopSettingsPanel from '../components/ShopSettingsPanel';
 import StaffPanel from '../components/StaffPanel';
 import AccessControlPanel from '../components/AccessControlPanel';
 import { useStaff } from '../lib/StaffContext';
+import { useRoleAccess } from '../lib/RoleAccessContext';
+import { canAccess } from '../lib/roles';
 
 export default function Admin() {
   const { showToast } = useToast();
   const { profile } = useStaff();
   const isSuperAdmin = profile?.role === 'super_admin';
+  const { access } = useRoleAccess();
+  const canSeeTables = canAccess(profile?.role, 'tables', access);
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -221,6 +225,7 @@ export default function Admin() {
       </div>
 
       {/* DINING TABLES */}
+      {canSeeTables && (
       <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-5">
         <div className="flex items-center gap-2 mb-3">
           <h3 className="text-sm font-extrabold flex items-center gap-1.5">🪑 Dining Tables</h3>
@@ -247,6 +252,7 @@ export default function Admin() {
           {!tables.length && <p className="text-gray-400 text-sm py-2">Abhi koi table nahi hai — "+ New Table" se banayein</p>}
         </div>
       </div>
+      )}
 
       {/* ITEMS FOR SELECTED CATEGORY */}
       {activeCat ? (
