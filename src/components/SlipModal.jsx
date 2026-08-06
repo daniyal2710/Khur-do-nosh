@@ -38,11 +38,19 @@ export default function SlipModal({ order, items, customer, onClose }) {
     window.print();
   }
 
-  function sendWhatsapp() {
+  function sendWhatsappBill() {
     if (!customer?.phone) return;
     const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
     const lines = items.map((it) => `${it.quantity}x ${it.item_name}`).join('\n');
     const msg = `${shopName} 🍕\nOrder ${order.order_number}\n${lines}\n\nTotal: ${fmtPKR(order.total)}\nShukriya!`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function sendWhatsappThankYou() {
+    if (!customer?.phone) return;
+    const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
+    const name = customer.name ? customer.name.split(' ')[0] : '';
+    const msg = `Shukriya ${name}! 🙏\nAapka order ${order.order_number} ${shopName} se successfully mil gaya hoga.\nHumein ummeed hai aapko pasand aaya hoga — dobara visit ka intezar rahega! 🍽️`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -99,9 +107,14 @@ export default function SlipModal({ order, items, customer, onClose }) {
 
         <div className="p-4 pt-0 space-y-2">
           {customer?.phone && (
-            <button onClick={sendWhatsapp} className="w-full py-2.5 bg-[#25D366] text-white rounded-lg font-bold text-sm">
-              📲 Send on WhatsApp
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={sendWhatsappBill} className="py-2.5 bg-[#25D366] text-white rounded-lg font-bold text-sm">
+                📄 Send Bill
+              </button>
+              <button onClick={sendWhatsappThankYou} className="py-2.5 bg-[#128C7E] text-white rounded-lg font-bold text-sm">
+                🙏 Thank You
+              </button>
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={printKitchen} className="py-2.5 bg-orange-100 text-orange-800 rounded-lg font-bold text-sm">

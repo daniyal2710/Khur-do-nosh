@@ -16,6 +16,7 @@ import Sales from './pages/Sales';
 import Products from './pages/Products';
 import AreaReport from './pages/AreaReport';
 import Customers from './pages/Customers';
+import PettyCash from './pages/PettyCash';
 import Admin from './pages/Admin';
 
 const PAGES = {
@@ -28,6 +29,7 @@ const PAGES = {
   products: Products,
   area: AreaReport,
   customers: Customers,
+  expenses: PettyCash,
   admin: Admin,
 };
 

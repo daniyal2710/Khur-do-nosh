@@ -23,6 +23,7 @@ export const PAGES = [
   { id: 'products', icon: '📦', label: 'Products' },
   { id: 'area', icon: '📍', label: 'Area' },
   { id: 'customers', icon: '👥', label: 'Customers' },
+  { id: 'expenses', icon: '💸', label: 'Petty Cash' },
   { id: 'admin', icon: '⚙️', label: 'Admin' },
 ];
 

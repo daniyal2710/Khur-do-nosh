@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../lib/ToastContext';
 import { fmtPKR, timeAgo } from '../lib/format';
 import BarRow from '../components/BarRow';
+import { useStaff } from '../lib/StaffContext';
+import { useRoleAccess } from '../lib/RoleAccessContext';
+import { canAccess } from '../lib/roles';
 
 function nextStatusFor(order) {
   const isDelivery = order.order_type === 'delivery' || order.order_type === 'foodpanda';
@@ -34,7 +37,10 @@ const TYPE_META = {
 
 export default function Dashboard() {
   const { showToast } = useToast();
-  const [kpis, setKpis] = useState({ today: { orders: 0, revenue: 0 }, week: { orders: 0, revenue: 0 } });
+  const { profile } = useStaff();
+  const { access } = useRoleAccess();
+  const canSeeExpenses = canAccess(profile?.role, 'expenses', access);
+  const [kpis, setKpis] = useState({ today: { orders: 0, revenue: 0, expense: 0 }, week: { orders: 0, revenue: 0, expense: 0 } });
   const [live, setLive] = useState([]);
   const [daily, setDaily] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -47,19 +53,22 @@ export default function Dashboard() {
     const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const startWeek = new Date(now.getTime() - 6 * 86400000).toISOString();
 
-    const [todayQ, weekQ, liveQ, dailyQ, payQ, allOrdersQ] = await Promise.all([
+    const [todayQ, weekQ, liveQ, dailyQ, payQ, allOrdersQ, expTodayQ, expWeekQ] = await Promise.all([
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startToday),
       supabase.from('orders').select('total').eq('status', 'completed').gte('created_at', startWeek),
       supabase.from('orders').select('*, order_items(*)').in('status', ['queued', 'cooking', 'ready', 'dispatched']).order('created_at', { ascending: false }),
       supabase.from('v_daily_sales').select('*').limit(7),
       supabase.from('v_payment_breakdown').select('*'),
       supabase.from('orders').select('order_type, status, total, created_at').limit(5000),
+      supabase.from('expenses').select('amount').gte('expense_date', startToday.slice(0, 10)),
+      supabase.from('expenses').select('amount').gte('expense_date', startWeek.slice(0, 10)),
     ]);
 
     const sum = (rows) => (rows || []).reduce((s, r) => s + Number(r.total), 0);
+    const sumAmt = (rows) => (rows || []).reduce((s, r) => s + Number(r.amount), 0);
     setKpis({
-      today: { orders: (todayQ.data || []).length, revenue: sum(todayQ.data) },
-      week: { orders: (weekQ.data || []).length, revenue: sum(weekQ.data) },
+      today: { orders: (todayQ.data || []).length, revenue: sum(todayQ.data), expense: sumAmt(expTodayQ.data) },
+      week: { orders: (weekQ.data || []).length, revenue: sum(weekQ.data), expense: sumAmt(expWeekQ.data) },
     });
     setLive(liveQ.data || []);
     setDaily(dailyQ.data || []);
@@ -127,6 +136,39 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* SALES VS EXPENSES */}
+      {canSeeExpenses && (
+        <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
+          <h3 className="text-sm font-extrabold mb-3">💸 Sales vs Expenses</h3>
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
+            {[
+              { label: 'Today', v: kpis.today },
+              { label: 'This Week', v: kpis.week },
+            ].map((k) => {
+              const net = k.v.revenue - k.v.expense;
+              return (
+                <div key={k.label} className="border-2 border-gray-100 rounded-[11px] p-3">
+                  <div className="text-[11px] font-bold text-gray-400 uppercase mb-1.5">{k.label}</div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500">Sale</span>
+                    <span className="font-extrabold text-greenok">{fmtPKR(k.v.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-gray-500">Expense</span>
+                    <span className="font-extrabold text-red-500">{fmtPKR(k.v.expense)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t-2 border-gray-100 pt-1.5">
+                    <span className="font-bold">Net</span>
+                    <span className={`font-black ${net >= 0 ? 'text-greenok' : 'text-red-500'}`}>{fmtPKR(net)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-3">Detail record aur filters ke liye 💸 Petty Cash tab dekhein.</p>
+        </div>
+      )}
 
       {/* SALE MODE SUMMARY */}
       <div className="bg-white rounded-[13px] p-4 border-2 border-gray-100 mb-3.5">
