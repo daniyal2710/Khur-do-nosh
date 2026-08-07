@@ -47,12 +47,14 @@ export default function SlipModal({ order, items, customer, onClose }) {
   }
 
   function sendWhatsappThankYou() {
-    if (!customer?.phone) return;
-    const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
-    const name = customer.name ? customer.name.split(' ')[0] : '';
-    const msg = `Shukriya ${name}! 🙏\nAapka order ${order.order_number} ${shopName} se successfully mil gaya hoga.\nHumein ummeed hai aapko pasand aaya hoga — dobara visit ka intezar rahega! 🍽️`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-  }
+  if (!customer?.phone) return;
+  const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
+  const name = customer.name ? customer.name.split(' ')[0] : '';
+  
+  const msg = `Thank You ${name}! ❤️\n\nThank you for choosing Khurd o Nosh.\n\nEvery order means the world to us. We hope you enjoy every bite, and we look forward to serving you again.`;
+  
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4">
