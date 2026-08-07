@@ -13,7 +13,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
   const { settings } = useShopSettings();
   const shopName = settings?.shop_name || 'Khurd o Nosh';
   const tagline = settings?.tagline || 'Khao, Piyo, Khush Raho';
-  const footer = settings?.receipt_footer || 'Thank You! ❤️ Thank you for choosing Khurd o Nosh Every order means the world to us. We hope you enjoy every bite, and we look forward to serving you again.';
+  const footer = settings?.receipt_footer || 'Shukriya! Dobara tashreef laayein.';
   const badge = TYPE_BADGE[order.order_type] || TYPE_BADGE['dine-in'];
   const dateStr = new Date(order.created_at || Date.now()).toLocaleString('en-PK');
 
