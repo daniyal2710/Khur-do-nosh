@@ -14,10 +14,12 @@ export default function SlipModal({ order, items, customer, onClose }) {
   const shopName = settings?.shop_name || 'Khurd o Nosh';
   const tagline = settings?.tagline || 'Khao, Piyo, Khush Raho';
   const footer = settings?.receipt_footer || 'Shukriya! Dobara tashreef laayein.';
+  const taxPercent = Number(settings?.tax_percent) || 0;
+  const taxAmount = Number(order.tax_amount) || 0;
   const badge = TYPE_BADGE[order.order_type] || TYPE_BADGE['dine-in'];
   const dateStr = new Date(order.created_at || Date.now()).toLocaleString('en-PK');
+  const showAddress = (order.order_type === 'delivery' || order.order_type === 'foodpanda') && order.delivery_address;
 
-  // Clean up the print-target body class after the print dialog closes/cancels
   useEffect(() => {
     function cleanup() {
       document.body.classList.remove('print-kitchen', 'print-customer');
@@ -47,14 +49,12 @@ export default function SlipModal({ order, items, customer, onClose }) {
   }
 
   function sendWhatsappThankYou() {
-  if (!customer?.phone) return;
-  const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
-  const name = customer.name ? customer.name.split(' ')[0] : '';
-  
-  const msg = `Thank You ${name}! ❤️\n\nThank you for choosing Khurd o Nosh.\n\nEvery order means the world to us. We hope you enjoy every bite, and we look forward to serving you again.`;
-  
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-}
+    if (!customer?.phone) return;
+    const phone = customer.phone.replace(/[^0-9]/g, '').replace(/^0/, '92');
+    const name = customer.name ? customer.name.split(' ')[0] : '';
+    const msg = `Shukriya ${name}! 🙏\nAapka order ${order.order_number} ${shopName} se successfully mil gaya hoga.\nHumein ummeed hai aapko pasand aaya hoga — dobara visit ka intezar rahega! 🍽️`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4">
@@ -74,9 +74,9 @@ export default function SlipModal({ order, items, customer, onClose }) {
               <div className="w-8 h-8 bg-orange text-white rounded-lg font-black flex items-center justify-center flex-shrink-0">
                 {it.quantity}
               </div>
-              <div className="font-bold text-sm flex-1">
-                {it.item_name}
-                {it.description && <div className="text-[11px] font-normal text-gray-400">{it.description}</div>}
+              <div className="flex-1">
+                <div className="font-bold text-sm">{it.item_name}</div>
+                {it.description && <div className="text-[11px] text-gray-400">↳ {it.description}</div>}
               </div>
               <div className="text-sm font-bold text-gray-500">{fmtPKR(it.subtotal)}</div>
             </div>
@@ -86,9 +86,17 @@ export default function SlipModal({ order, items, customer, onClose }) {
               📝 {order.notes}
             </div>
           )}
+          {showAddress && (
+            <div className="text-xs text-gray-500 mt-2 text-center">📍 {order.delivery_address}</div>
+          )}
           <div className="flex justify-between text-sm text-gray-500 mt-3">
             <span>Subtotal</span><span>{fmtPKR(order.subtotal)}</span>
           </div>
+          {taxAmount > 0 && (
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>GST ({taxPercent}%)</span><span>{fmtPKR(taxAmount)}</span>
+            </div>
+          )}
           {order.discount > 0 && (
             <div className="flex justify-between text-sm text-gray-500">
               <span>Discount</span><span>-{fmtPKR(order.discount)}</span>
@@ -97,11 +105,6 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div className="flex justify-between text-lg font-black mt-1">
             <span>Total</span><span className="text-orange">{fmtPKR(order.total)}</span>
           </div>
-          {order.delivery_address && (
-            <div className="bg-gray-50 rounded-lg p-2.5 mt-3 text-xs text-gray-600 border-2 border-gray-100">
-              🛵 <span className="font-bold">Deliver to:</span> {order.delivery_address}
-            </div>
-          )}
           {customer && (
             <div className="text-xs text-gray-400 mt-2 text-center">{customer.name} · {customer.phone}</div>
           )}
@@ -143,24 +146,16 @@ export default function SlipModal({ order, items, customer, onClose }) {
             <span>{TYPE_BADGE[order.order_type]?.lb.toUpperCase()}</span>
           </div>
           <div style={{ fontSize: '10px' }}>{dateStr}</div>
+          {showAddress && <div style={{ fontSize: '11px', fontWeight: 'bold' }}>📍 {order.delivery_address}</div>}
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           {items.map((it) => (
             <div key={it.id || it.menu_item_id} style={{ margin: '1.5mm 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>
                 <span>{it.quantity}x {it.item_name}</span>
               </div>
-              {it.description && (
-                <div style={{ fontSize: '10px', paddingLeft: '3mm' }}>↳ {it.description}</div>
-              )}
+              {it.description && <div style={{ fontSize: '10px' }}>↳ {it.description}</div>}
             </div>
           ))}
-          {order.delivery_address && (
-            <>
-              <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
-              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>DELIVER TO:</div>
-              <div style={{ fontSize: '11px' }}>{order.delivery_address}</div>
-            </>
-          )}
           {order.notes && (
             <>
               <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
@@ -187,9 +182,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div>{order.order_number} — {dateStr}</div>
           <div>{TYPE_BADGE[order.order_type]?.lb}</div>
           {customer && <div>{customer.name} · {customer.phone}</div>}
-          {order.delivery_address && (
-            <div style={{ fontSize: '11px', marginTop: '1mm' }}>🛵 {order.delivery_address}</div>
-          )}
+          {showAddress && <div>📍 {order.delivery_address}</div>}
           <div style={{ borderTop: '1px dashed #000', margin: '2mm 0' }} />
           {items.map((it) => (
             <div key={it.id || it.menu_item_id} style={{ margin: '1mm 0' }}>
@@ -197,9 +190,7 @@ export default function SlipModal({ order, items, customer, onClose }) {
                 <span>{it.quantity}x {it.item_name}</span>
                 <span>{fmtPKR(it.subtotal)}</span>
               </div>
-              {it.description && (
-                <div style={{ fontSize: '10px', paddingLeft: '3mm', color: '#333' }}>↳ {it.description}</div>
-              )}
+              {it.description && <div style={{ fontSize: '10px' }}>↳ {it.description}</div>}
             </div>
           ))}
           {order.notes && (
@@ -212,6 +203,11 @@ export default function SlipModal({ order, items, customer, onClose }) {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Subtotal</span><span>{fmtPKR(order.subtotal)}</span>
           </div>
+          {taxAmount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>GST ({taxPercent}%)</span><span>{fmtPKR(taxAmount)}</span>
+            </div>
+          )}
           {order.discount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Discount</span><span>-{fmtPKR(order.discount)}</span>

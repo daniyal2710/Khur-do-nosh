@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../lib/ToastContext';
+import { useShopSettings } from '../lib/ShopSettingsContext';
 import { fmtPKR, tierOf, tierLabel, tierClass } from '../lib/format';
 import AddCustomerModal from '../components/AddCustomerModal';
 import SlipModal from '../components/SlipModal';
@@ -16,6 +17,8 @@ const STEP_LABEL = { type: 'Order Type', menu: 'Menu', review: 'Review & Pay' };
 
 export default function POS() {
   const { showToast } = useToast();
+  const { settings } = useShopSettings();
+  const taxPercent = Number(settings?.tax_percent) || 0;
 
   const [categories, setCategories] = useState([]);
   const [menu, setMenu] = useState([]);
@@ -39,7 +42,7 @@ export default function POS() {
   const [showAddCust, setShowAddCust] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
-  const [justAdded, setJustAdded] = useState(null); // brief add-to-cart flash
+  const [justAdded, setJustAdded] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -98,7 +101,8 @@ export default function POS() {
   }
 
   const subtotal = cart.reduce((s, x) => s + x.price * x.qty, 0);
-  const total = subtotal;
+  const taxAmount = Math.round((subtotal * taxPercent) / 100);
+  const total = subtotal + taxAmount;
   const cartCount = cart.reduce((s, x) => s + x.qty, 0);
 
   function selectOrderType(t) {
@@ -168,6 +172,7 @@ export default function POS() {
         table_id: orderType === 'dine-in' ? tableId : null,
         payment_method: paymentMethod,
         subtotal,
+        tax_amount: taxAmount,
         total,
         status: 'queued',
         notes: notes.trim() || null,
@@ -312,18 +317,16 @@ export default function POS() {
                     ))}
                   </select>
                 </div>
-                {(orderType === 'delivery' || orderType === 'foodpanda') && (
-                  <div>
-                    <label className="text-[11px] font-black text-gray-500 uppercase">Guided Address</label>
-                    <textarea
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="House #, street, landmark…"
-                      rows={2}
-                      className="w-full mt-1 px-3 py-2.5 border-2 border-orange-200 rounded-lg text-sm outline-none focus:border-orange resize-none"
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="text-[11px] font-black text-gray-500 uppercase">Guided Address</label>
+                  <textarea
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="House #, street, landmark…"
+                    rows={2}
+                    className="w-full mt-1 px-3 py-2.5 border-2 border-orange-200 rounded-lg text-sm outline-none focus:border-orange resize-none"
+                  />
+                </div>
               </div>
             )}
 
@@ -402,6 +405,11 @@ export default function POS() {
               <div className="flex justify-between text-[13px] text-gray-500 mb-1">
                 <span>Subtotal</span><span>{fmtPKR(subtotal)}</span>
               </div>
+              {taxAmount > 0 && (
+                <div className="flex justify-between text-[13px] text-gray-500 mb-1">
+                  <span>GST ({taxPercent}%)</span><span>{fmtPKR(taxAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-black mb-2.5">
                 <span>Total</span><span className="text-orange">{fmtPKR(total)}</span>
               </div>
@@ -471,7 +479,6 @@ export default function POS() {
             {step === 'review' && (
               <div className="flex-1 overflow-y-auto p-5">
                 <div className="max-w-[520px] mx-auto">
-                  {/* SPECIAL INSTRUCTIONS */}
                   <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 mb-4">
                     <label className="text-[11px] font-black text-gray-500 uppercase">📝 Special Instructions</label>
                     <textarea
@@ -483,7 +490,6 @@ export default function POS() {
                     />
                   </div>
 
-                  {/* CUSTOMER */}
                   <div className={`bg-white rounded-2xl p-4 border-2 mb-4 ${(orderType === 'delivery' || orderType === 'foodpanda') && !customer ? 'border-red-300' : 'border-gray-100'}`}>
                     <div className="text-[11px] font-black text-orange uppercase tracking-wide mb-2">
                       👤 Customer {(orderType === 'delivery' || orderType === 'foodpanda') ? <span className="text-red-500">(required)</span> : <span className="text-gray-400 normal-case font-semibold">(optional)</span>}
@@ -544,7 +550,6 @@ export default function POS() {
                     )}
                   </div>
 
-                  {/* PAYMENT */}
                   <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 mb-4">
                     <label className="text-[11px] font-black text-gray-500 uppercase mb-2 block">💳 Payment Method</label>
                     <div className="grid grid-cols-4 gap-2">
@@ -568,7 +573,6 @@ export default function POS() {
                     </div>
                   </div>
 
-                  {/* PLACE ORDER */}
                   <button
                     onClick={placeOrder}
                     disabled={!cart.length || placing || ((orderType === 'delivery' || orderType === 'foodpanda') && !customer)}
